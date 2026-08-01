@@ -1,0 +1,90 @@
+{
+  "project_info": {
+    "project_number": "88683294038",
+    "project_id": "parkfinity-f8544",
+    "storage_bucket": "parkfinity-f8544.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:88683294038:android:e92a401bd4422cfe65baf7",
+        "android_client_info": {
+          "package_name": "com.example.parkfinity"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "88683294038-d5393jprqc9cnsdfn145gbum5ilhhmks.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.parkfinity",
+            "certificate_hash": "dcd97c2597c2c9951f87f256a4f992e62fd76169"
+          }
+        },
+        {
+          "client_id": "88683294038-sdphq36r04leeg6nc6l4koa9o2rg1hq4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDpCXq0PiWCqxFf98n4tfwTxa1zo32Qr0g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "88683294038-sdphq36r04leeg6nc6l4koa9o2rg1hq4.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "88683294038-97b2vq8q4iafaq9p7ne16f7d2alq5qab.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.parkfinity"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:88683294038:android:ff72aff6ea4f644565baf7",
+        "android_client_info": {
+          "package_name": "com.parkfinity.parkfinity"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "88683294038-sdphq36r04leeg6nc6l4koa9o2rg1hq4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDpCXq0PiWCqxFf98n4tfwTxa1zo32Qr0g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "88683294038-sdphq36r04leeg6nc6l4koa9o2rg1hq4.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "88683294038-97b2vq8q4iafaq9p7ne16f7d2alq5qab.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.parkfinity"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
