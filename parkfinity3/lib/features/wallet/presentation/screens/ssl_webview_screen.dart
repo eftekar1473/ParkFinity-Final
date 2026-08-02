@@ -26,7 +26,7 @@ class _SSLWebViewScreenState extends State<SSLWebViewScreen> {
   @override
   void initState() {
     super.initState();
-    print("Loading URL in WebView: ${widget.url}");
+    debugPrint("Loading URL in WebView: ${widget.url}");
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(const Color(0xFFFFFFFF))
@@ -43,7 +43,7 @@ class _SSLWebViewScreenState extends State<SSLWebViewScreen> {
             });
           },
           onWebResourceError: (WebResourceError error) {
-            print('WebView Error: ${error.description}');
+            debugPrint('WebView Error: ${error.description}');
           },
           onNavigationRequest: (NavigationRequest request) {
             if (request.url.startsWith(widget.successUrl)) {

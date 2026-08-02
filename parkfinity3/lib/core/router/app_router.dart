@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 // Auth State
 import '../../features/auth/data/auth_repository.dart';
@@ -15,6 +14,7 @@ import '../../features/auth/presentation/screens/splash_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
 import '../../features/auth/presentation/screens/role_selection_screen.dart';
+import '../../features/auth/presentation/screens/kyc_upload_screen.dart';
 
 import '../../features/rider/presentation/screens/explore_map_screen.dart';
 import '../../features/rider/presentation/screens/rider_booking_history_screen.dart';
@@ -22,6 +22,7 @@ import '../../features/rider/presentation/screens/my_vehicles_screen.dart';
 import '../../features/rider/presentation/screens/listing_details_screen.dart';
 import '../../features/rider/presentation/screens/checkout_screen.dart';
 import '../../features/rider/presentation/screens/active_parking_screen.dart';
+import '../../features/rider/presentation/screens/smart_recommendations_screen.dart';
 import '../../features/owner/data/models/listing_model.dart';
 
 // Owner Screens
@@ -30,9 +31,12 @@ import '../../features/owner/presentation/screens/owner_booking_history_screen.d
 import '../../features/owner/presentation/screens/my_listings_screen.dart';
 import '../../features/wallet/presentation/screens/wallet_screen.dart';
 import '../../features/owner/presentation/screens/add_listing_screen.dart';
+import '../../features/owner/presentation/screens/edit_listing_screen.dart';
+import '../../features/owner/presentation/screens/withdrawal_screen.dart';
 
 // Shared
 import '../../features/shared/presentation/screens/profile_screen.dart';
+import '../../features/shared/presentation/screens/notifications_screen.dart';
 
 // Global Navigator Key
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -47,30 +51,40 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       final session = authState.value?.session;
       final isAuth = session != null;
       final role = session?.user.userMetadata?['role'] as String?;
-      
+      final kyc = session?.user.userMetadata?['kyc_status'] as String?;
+
       final isSplash = state.matchedLocation == '/splash';
       final isLoggingIn = state.matchedLocation == '/login' || state.matchedLocation == '/register';
+      final loc = state.matchedLocation;
 
       if (authState.isLoading || authState.hasError) return null;
 
-      // Determine where the user should go if they are authenticated
-      String? getAuthRedirect() {
-        if (role?.toLowerCase() == 'rider') return '/rider/explore';
-        if (role?.toLowerCase() == 'owner') return '/owner/dashboard';
-        return '/role_selection';
+      final hasRole = role?.toLowerCase() == 'rider' || role?.toLowerCase() == 'owner';
+      final kycOk = kyc == 'verified';
+
+      // Where an authenticated user belongs, enforcing the onboarding order:
+      // role selection -> KYC verification -> home.
+      String getAuthRedirect() {
+        if (!hasRole) return '/role_selection';
+        if (!kycOk) return '/kyc';
+        return role!.toLowerCase() == 'owner' ? '/owner/dashboard' : '/rider/explore';
       }
 
-      if (isSplash) {
-        return isAuth ? getAuthRedirect() : '/login';
+      if (!isAuth) {
+        return isSplash || isLoggingIn ? '/login' : (isSplash ? null : '/login');
       }
 
-      if (isLoggingIn) {
-        return isAuth ? getAuthRedirect() : null;
-      }
+      // Authenticated below this point.
+      if (isSplash || isLoggingIn) return getAuthRedirect();
 
-      if (!isAuth && state.matchedLocation != '/splash') {
-        return '/login';
-      }
+      // Hold the user on role selection until a role is chosen.
+      if (!hasRole) return loc == '/role_selection' ? null : '/role_selection';
+
+      // Hold the user on the KYC gate until verified. Allow sign-out to work.
+      if (!kycOk) return loc == '/kyc' ? null : '/kyc';
+
+      // Verified users should not sit on onboarding screens.
+      if (loc == '/role_selection' || loc == '/kyc') return getAuthRedirect();
 
       return null;
     },
@@ -92,8 +106,25 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const RoleSelectionScreen(),
       ),
       GoRoute(
+        path: '/kyc',
+        builder: (context, state) => const KycUploadScreen(),
+      ),
+      GoRoute(
         path: '/add_listing',
         builder: (context, state) => const AddListingScreen(),
+      ),
+      GoRoute(
+        path: '/edit_listing',
+        builder: (context, state) =>
+            EditListingScreen(listing: state.extra as ListingModel),
+      ),
+      GoRoute(
+        path: '/withdraw',
+        builder: (context, state) => const WithdrawalScreen(),
+      ),
+      GoRoute(
+        path: '/notifications',
+        builder: (context, state) => const NotificationsScreen(),
       ),
 
       // ==========================================
@@ -121,6 +152,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'active',
                     builder: (context, state) => const ActiveParkingScreen(),
+                  ),
+                  GoRoute(
+                    path: 'recommendations',
+                    builder: (context, state) =>
+                        const SmartRecommendationsScreen(),
                   ),
                 ],
               ),

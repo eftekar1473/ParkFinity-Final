@@ -53,6 +53,13 @@ class ListingsRepository {
     return ListingModel.fromJson(response);
   }
 
+  Future<void> updateListingStatus(String id, bool isActive) async {
+    await _client
+        .from('listings')
+        .update({'is_active': isActive})
+        .eq('id', id);
+  }
+
   Future<void> deleteListing(String id) async {
     await _client.from('listings').delete().eq('id', id);
   }

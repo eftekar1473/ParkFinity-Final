@@ -6,6 +6,10 @@ import 'dart:io';
 import '../../../auth/presentation/auth_controller.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../../../../core/data/repositories/storage_repository.dart';
+import '../../data/document_verification_service.dart';
+import '../../data/notification_service.dart';
+import '../../../../core/controllers/settings_controller.dart';
+import '../../../../l10n/generated/app_localizations.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -28,24 +32,40 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       final user = ref.read(authStateChangesProvider).value?.session?.user;
       if (user == null) throw Exception('Not logged in');
 
+      // AI Document Verification
+      final verificationService = ref.read(documentVerificationProvider);
+      final file = File(image.path);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Verifying document with AI... Please wait.')),
+        );
+      }
+
+      final result = await verificationService.verifyNid(file);
+
+      if (!result.valid) {
+        throw Exception(result.reason);
+      }
+
       final storageRepo = ref.read(storageRepositoryProvider);
       final authRepo = ref.read(authRepositoryProvider);
 
       // Upload to storage
-      final imageUrl = await storageRepo.uploadImage(File(image.path), 'documents', user.id);
-      
+      final imageUrl = await storageRepo.uploadImage(file, 'documents', user.id);
+
       // Update database profile
       await authRepo.updateDocumentUrl(column, imageUrl);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Document uploaded successfully!')),
+          const SnackBar(content: Text('Document verified and uploaded successfully!')),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to upload document: $e')),
+          SnackBar(content: Text('$e'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -63,6 +83,45 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         title: const Text('My Profile', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
         elevation: 0,
+        actions: [
+          Consumer(
+            builder: (context, ref, _) {
+              final user = ref.watch(authStateChangesProvider).value?.session?.user;
+              if (user == null) return const SizedBox.shrink();
+              
+              final unreadCountAsync = ref.watch(unreadNotificationCountProvider(user.id));
+              final unreadCount = unreadCountAsync.value ?? 0;
+              
+              return Stack(
+                alignment: Alignment.center,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.notifications_outlined, color: Colors.deepPurple),
+                    onPressed: () {
+                      context.push('/notifications');
+                    },
+                  ),
+                  if (unreadCount > 0)
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Text(
+                          '$unreadCount',
+                          style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            }
+          ),
+        ],
       ),
       body: _isUploading 
           ? const Center(child: CircularProgressIndicator()) 
@@ -110,7 +169,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           decoration: BoxDecoration(
-                            color: Colors.amber.withOpacity(0.2),
+                            color: Colors.amber.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: const Row(
@@ -167,6 +226,52 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           title: 'Upload Driving License',
                           onTap: () => _uploadDocument('driving_license_url'),
                         ),
+
+                        const SizedBox(height: 24),
+
+                        Padding(
+                          padding: const EdgeInsets.only(left: 16, bottom: 8),
+                          child: Text(AppLocalizations.of(context).settings, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+                        ),
+                        // Language toggle
+                        _buildSettingsTile(
+                          icon: Icons.language,
+                          title: AppLocalizations.of(context).language,
+                          trailing: Consumer(
+                            builder: (context, ref, _) {
+                              final locale = ref.watch(localeProvider);
+                              return Text(
+                                locale?.languageCode == 'bn' ? 'বাংলা' : 'English',
+                                style: TextStyle(color: Colors.grey[600], fontWeight: FontWeight.w500),
+                              );
+                            },
+                          ),
+                          onTap: () {
+                            ref.read(localeProvider.notifier).toggle();
+                          },
+                        ),
+                        // Theme toggle
+                        _buildSettingsTile(
+                          icon: Icons.brightness_6_outlined,
+                          title: AppLocalizations.of(context).theme,
+                          trailing: Consumer(
+                            builder: (context, ref, _) {
+                              final themeMode = ref.watch(themeModeProvider);
+                              final label = switch (themeMode) {
+                                ThemeMode.dark  => 'Dark',
+                                ThemeMode.light => 'Light',
+                                _               => 'System',
+                              };
+                              return Text(
+                                label,
+                                style: TextStyle(color: Colors.grey[600], fontWeight: FontWeight.w500),
+                              );
+                            },
+                          ),
+                          onTap: () {
+                            ref.read(themeModeProvider.notifier).cycle();
+                          },
+                        ),
                         
                         const SizedBox(height: 24),
                         
@@ -194,7 +299,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           },
                           leading: Container(
                             padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(color: Colors.red.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                            decoration: BoxDecoration(color: Colors.red.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
                             child: const Icon(Icons.logout, color: Colors.red),
                           ),
                           title: const Text('Log Out', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
@@ -206,6 +311,37 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ],
               ),
             ),
+    );
+  }
+
+  Widget _buildSettingsTile({required IconData icon, required String title, required Widget trailing, required VoidCallback onTap}) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: ListTile(
+        onTap: onTap,
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.deepPurple.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: Colors.deepPurple),
+        ),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            trailing,
+            const SizedBox(width: 4),
+            const Icon(Icons.chevron_right, color: Colors.grey),
+          ],
+        ),
+      ),
     );
   }
 
@@ -222,7 +358,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.deepPurple.withOpacity(0.1),
+            color: Colors.deepPurple.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, color: Colors.deepPurple),

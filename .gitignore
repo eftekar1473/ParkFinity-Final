@@ -1,0 +1,6 @@
+# Word/Office temp lock files
+~$*
+
+# Environment secrets — NEVER commit
+.env
+*.env

@@ -79,8 +79,7 @@ class WithdrawalsScreen extends ConsumerWidget {
                               TextButton(
                                 onPressed: () async {
                                   final supabase = Supabase.instance.client;
-                                  // In real app, we might call an RPC to properly handle balance deduct if it wasn't already
-                                  await supabase.from('withdrawals').update({'status': 'Completed', 'processed_at': DateTime.now().toIso8601String()}).eq('id', withdrawal['id']);
+                                  await supabase.rpc('approve_withdrawal', params: {'p_withdrawal': withdrawal['id']});
                                   ref.invalidate(withdrawalsListProvider);
                                 },
                                 style: TextButton.styleFrom(foregroundColor: Colors.green),
@@ -89,7 +88,7 @@ class WithdrawalsScreen extends ConsumerWidget {
                               TextButton(
                                 onPressed: () async {
                                   final supabase = Supabase.instance.client;
-                                  await supabase.from('withdrawals').update({'status': 'Rejected', 'processed_at': DateTime.now().toIso8601String()}).eq('id', withdrawal['id']);
+                                  await supabase.rpc('reject_withdrawal', params: {'p_withdrawal': withdrawal['id']});
                                   ref.invalidate(withdrawalsListProvider);
                                 },
                                 style: TextButton.styleFrom(foregroundColor: Colors.red),

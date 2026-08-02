@@ -12,12 +12,14 @@ class AdminScaffold extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final location = GoRouterState.of(context).matchedLocation;
     
+    const dests = [
+      '/dashboard', '/users', '/kyc', '/listings',
+      '/bookings', '/payments', '/withdrawals', '/reports', '/settings',
+    ];
+
     int getSelectedIndex() {
-      if (location.startsWith('/dashboard')) return 0;
-      if (location.startsWith('/users')) return 1;
-      if (location.startsWith('/listings')) return 2;
-      if (location.startsWith('/withdrawals')) return 3;
-      return 0;
+      final i = dests.indexWhere((d) => location.startsWith(d));
+      return i < 0 ? 0 : i;
     }
 
     return Scaffold(
@@ -37,33 +39,43 @@ class AdminScaffold extends ConsumerWidget {
                 label: Text('Users'),
               ),
               NavigationRailDestination(
+                icon: Icon(Icons.badge_outlined),
+                selectedIcon: Icon(Icons.badge),
+                label: Text('KYC'),
+              ),
+              NavigationRailDestination(
                 icon: Icon(Icons.local_parking_outlined),
                 selectedIcon: Icon(Icons.local_parking),
                 label: Text('Listings'),
+              ),
+              NavigationRailDestination(
+                icon: Icon(Icons.book_online_outlined),
+                selectedIcon: Icon(Icons.book_online),
+                label: Text('Bookings'),
+              ),
+              NavigationRailDestination(
+                icon: Icon(Icons.payments_outlined),
+                selectedIcon: Icon(Icons.payments),
+                label: Text('Payments'),
               ),
               NavigationRailDestination(
                 icon: Icon(Icons.account_balance_wallet_outlined),
                 selectedIcon: Icon(Icons.account_balance_wallet),
                 label: Text('Withdrawals'),
               ),
+              NavigationRailDestination(
+                icon: Icon(Icons.bar_chart_outlined),
+                selectedIcon: Icon(Icons.bar_chart),
+                label: Text('Reports'),
+              ),
+              NavigationRailDestination(
+                icon: Icon(Icons.settings_outlined),
+                selectedIcon: Icon(Icons.settings),
+                label: Text('Settings'),
+              ),
             ],
             selectedIndex: getSelectedIndex(),
-            onDestinationSelected: (index) {
-              switch (index) {
-                case 0:
-                  context.go('/dashboard');
-                  break;
-                case 1:
-                  context.go('/users');
-                  break;
-                case 2:
-                  context.go('/listings');
-                  break;
-                case 3:
-                  context.go('/withdrawals');
-                  break;
-              }
-            },
+            onDestinationSelected: (index) => context.go(dests[index]),
             trailing: Expanded(
               child: Align(
                 alignment: Alignment.bottomCenter,

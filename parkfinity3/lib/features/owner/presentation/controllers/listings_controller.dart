@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/models/listing_model.dart';
 import '../../data/repositories/listings_repository.dart';
 import '../../../auth/data/auth_repository.dart';
@@ -7,6 +8,21 @@ import '../../../auth/data/auth_repository.dart';
 final allActiveListingsProvider = FutureProvider<List<ListingModel>>((ref) async {
   final repository = ref.watch(listingsRepositoryProvider);
   return repository.getAllActiveListings();
+});
+
+/// Realtime stream of active listings. Emits a fresh list whenever any
+/// listing row changes (e.g. slot_available decremented by a booking),
+/// so the map availability updates live without a manual refresh.
+final activeListingsStreamProvider =
+    StreamProvider<List<ListingModel>>((ref) {
+  final client = Supabase.instance.client;
+  return client
+      .from('listings')
+      .stream(primaryKey: ['id'])
+      .map((rows) => rows
+          .where((r) => r['is_active'] == true)
+          .map((e) => ListingModel.fromJson(e))
+          .toList());
 });
 
 // Provider for owner's own listings
@@ -38,6 +54,27 @@ class MyListingsController extends AsyncNotifier<List<ListingModel>> {
       // Invalidate the public provider so Riders see the new listing
       ref.invalidate(allActiveListingsProvider);
       
+      return _fetchMyListings();
+    });
+  }
+
+  Future<void> editListing(ListingModel listing) async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      final repository = ref.read(listingsRepositoryProvider);
+      await repository.updateListing(listing);
+
+      ref.invalidate(allActiveListingsProvider);
+      return _fetchMyListings();
+    });
+  }
+
+  Future<void> updateListingStatus(String id, bool isActive) async {
+    state = await AsyncValue.guard(() async {
+      final repository = ref.read(listingsRepositoryProvider);
+      await repository.updateListingStatus(id, isActive);
+      
+      ref.invalidate(allActiveListingsProvider);
       return _fetchMyListings();
     });
   }

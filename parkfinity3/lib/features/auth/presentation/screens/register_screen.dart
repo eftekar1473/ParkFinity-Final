@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../auth_controller.dart';
+import '../../../../l10n/generated/app_localizations.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -27,6 +28,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authControllerProvider);
+    final l10n = AppLocalizations.of(context);
 
     ref.listen<AsyncValue<void>>(authControllerProvider, (previous, next) {
       next.whenOrNull(
@@ -34,7 +36,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           String errorMessage = error.toString();
           if (error is AuthException) {
             if (error.statusCode == '429' || errorMessage.contains('429')) {
-              errorMessage = 'Too many sign-up attempts. Please wait a moment and try again.';
+              errorMessage = l10n.tooManySignUpAttempts;
             } else {
               errorMessage = error.message;
             }
@@ -62,41 +64,41 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
-                'Create an Account',
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+              Text(
+                l10n.registerTitle,
+                style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'Join ParkFinity and solve your parking problems.',
-                style: TextStyle(color: Colors.grey),
+              Text(
+                l10n.registerSubtitle,
+                style: const TextStyle(color: Colors.grey),
               ),
               const SizedBox(height: 32),
               TextField(
                 controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Full Name',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.person),
+                decoration: InputDecoration(
+                  labelText: l10n.fullName,
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.person),
                 ),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: _emailController,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.email),
+                decoration: InputDecoration(
+                  labelText: l10n.email,
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.email),
                 ),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: _passwordController,
                 obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: 'Password',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.lock),
+                decoration: InputDecoration(
+                  labelText: l10n.password,
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.lock),
                 ),
               ),
               const SizedBox(height: 32),
@@ -109,12 +111,34 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 ),
                 child: authState.isLoading
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text('Sign Up', style: TextStyle(fontSize: 18)),
+                    : Text(l10n.signUp, style: const TextStyle(fontSize: 18)),
+              ),
+              const SizedBox(height: 16),
+              Row(children: [
+                const Expanded(child: Divider()),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Text(l10n.or, style: TextStyle(color: Colors.grey[600])),
+                ),
+                const Expanded(child: Divider()),
+              ]),
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                onPressed: authState.isLoading
+                    ? null
+                    : () => ref.read(authControllerProvider.notifier).signInWithGoogle(),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  side: const BorderSide(color: Colors.grey),
+                ),
+                icon: const Icon(Icons.g_mobiledata, size: 28, color: Colors.red),
+                label: Text(l10n.continueWithGoogle,
+                    style: const TextStyle(fontSize: 16, color: Colors.black87)),
               ),
               const SizedBox(height: 16),
               TextButton(
                 onPressed: () => context.pop(),
-                child: const Text('Already have an account? Login'),
+                child: Text(l10n.haveAccountLogin),
               ),
             ],
           ),

@@ -3,19 +3,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../controllers/owner_bookings_provider.dart';
+import '../../../../core/utils/responsive.dart';
+import '../../../../l10n/generated/app_localizations.dart';
 
 class OwnerDashboardScreen extends ConsumerWidget {
   const OwnerDashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final bookingsAsync = ref.watch(ownerBookingsProvider);
     final currencyFormatter = NumberFormat.currency(symbol: '৳', decimalDigits: 0);
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: const Text('Dashboard', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(l10n.dashboard, style: const TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: false,
         backgroundColor: Colors.white,
         elevation: 0,
@@ -28,7 +31,7 @@ class OwnerDashboardScreen extends ConsumerWidget {
       ),
       body: bookingsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Error: $err')),
+        error: (err, stack) => Center(child: Text('${l10n.error}: $err')),
         data: (bookings) {
           final now = DateTime.now();
           final today = DateTime(now.year, now.month, now.day);
@@ -50,23 +53,26 @@ class OwnerDashboardScreen extends ConsumerWidget {
           }
 
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
+            padding: EdgeInsets.all(adaptivePadding(context)),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: adaptiveMaxWidth(context)),
+                child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Welcome Header
-                const Text(
-                  'Welcome back, Owner!',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                Text(
+                  l10n.welcomeBackOwner,
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 24),
-                
+
                 // Statistics Grid
                 Row(
                   children: [
                     Expanded(
                       child: _StatCard(
-                        title: "Today's Earnings",
+                        title: l10n.todaysEarnings,
                         value: currencyFormatter.format(todayEarnings),
                         icon: Icons.attach_money,
                         color: Colors.green,
@@ -75,7 +81,7 @@ class OwnerDashboardScreen extends ConsumerWidget {
                     const SizedBox(width: 16),
                     Expanded(
                       child: _StatCard(
-                        title: "Active Parkings",
+                        title: l10n.activeParkings,
                         value: activeBookings.toString(),
                         icon: Icons.directions_car,
                         color: Colors.blue,
@@ -85,19 +91,19 @@ class OwnerDashboardScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 16),
                 _StatCard(
-                  title: "Total Bookings Ever",
+                  title: l10n.totalBookingsEver,
                   value: bookings.length.toString(),
                   icon: Icons.history,
                   color: Colors.orange,
                   isFullWidth: true,
                 ),
-                
+
                 const SizedBox(height: 32),
-                
+
                 // Quick Actions
-                const Text(
-                  'Quick Actions',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                Text(
+                  l10n.quickActions,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
                 ElevatedButton.icon(
@@ -105,7 +111,7 @@ class OwnerDashboardScreen extends ConsumerWidget {
                     context.push('/add_listing');
                   },
                   icon: const Icon(Icons.add),
-                  label: const Text('Add New Parking Spot'),
+                  label: Text(l10n.addNewParkingSpot),
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     backgroundColor: Colors.deepPurple,
@@ -115,7 +121,23 @@ class OwnerDashboardScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: () => context.push('/withdraw'),
+                  icon: const Icon(Icons.account_balance_wallet_outlined),
+                  label: Text(l10n.withdrawEarnings),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    foregroundColor: Colors.deepPurple,
+                    side: const BorderSide(color: Colors.deepPurple),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
               ],
+                ),
+              ),
             ),
           );
         },
@@ -148,7 +170,7 @@ class _StatCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),

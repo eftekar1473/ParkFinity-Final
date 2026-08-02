@@ -6,8 +6,13 @@ import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/dashboard/presentation/screens/admin_scaffold.dart';
 import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../../features/users/presentation/screens/users_screen.dart';
+import '../../features/kyc/presentation/screens/kyc_screen.dart';
 import '../../features/listings/presentation/screens/listings_screen.dart';
+import '../../features/bookings/presentation/screens/bookings_screen.dart';
+import '../../features/payments/presentation/screens/payments_screen.dart';
 import '../../features/withdrawals/presentation/screens/withdrawals_screen.dart';
+import '../../features/reports/presentation/screens/reports_screen.dart';
+import '../../features/settings/presentation/screens/settings_screen.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
@@ -63,12 +68,32 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const UsersScreen(),
           ),
           GoRoute(
+            path: '/kyc',
+            builder: (context, state) => const KycScreen(),
+          ),
+          GoRoute(
             path: '/listings',
             builder: (context, state) => const ListingsScreen(),
           ),
           GoRoute(
+            path: '/bookings',
+            builder: (context, state) => const BookingsScreen(),
+          ),
+          GoRoute(
+            path: '/payments',
+            builder: (context, state) => const PaymentsScreen(),
+          ),
+          GoRoute(
             path: '/withdrawals',
             builder: (context, state) => const WithdrawalsScreen(),
+          ),
+          GoRoute(
+            path: '/reports',
+            builder: (context, state) => const ReportsScreen(),
+          ),
+          GoRoute(
+            path: '/settings',
+            builder: (context, state) => const SettingsScreen(),
           ),
         ],
       ),

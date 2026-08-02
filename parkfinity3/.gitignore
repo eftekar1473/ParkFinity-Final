@@ -43,3 +43,10 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Firebase admin key — NEVER commit
+service-account.json
+
+# Environment secrets — NEVER commit
+.env
+*.env

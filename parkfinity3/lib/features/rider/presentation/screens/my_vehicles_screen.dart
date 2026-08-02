@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../controllers/vehicles_controller.dart';
 import '../../data/models/vehicle_model.dart';
+import '../../../../l10n/generated/app_localizations.dart';
 
 class MyVehiclesScreen extends ConsumerStatefulWidget {
   const MyVehiclesScreen({super.key});
@@ -43,6 +44,7 @@ class _MyVehiclesScreenState extends ConsumerState<MyVehiclesScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) {
+          final l10n = AppLocalizations.of(context);
           return Container(
             decoration: const BoxDecoration(
               color: Colors.white,
@@ -60,14 +62,14 @@ class _MyVehiclesScreenState extends ConsumerState<MyVehiclesScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text('Add New Vehicle', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  Text(l10n.addNewVehicle, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 24),
                   DropdownButtonFormField<String>(
-                    value: _selectedType,
-                    decoration: const InputDecoration(
-                      labelText: 'Vehicle Type',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.category),
+                    initialValue: _selectedType,
+                    decoration: InputDecoration(
+                      labelText: l10n.vehicleType,
+                      border: const OutlineInputBorder(),
+                      prefixIcon: const Icon(Icons.category),
                     ),
                     items: _vehicleTypes.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
                     onChanged: (val) {
@@ -77,32 +79,32 @@ class _MyVehiclesScreenState extends ConsumerState<MyVehiclesScreen> {
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _brandController,
-                    decoration: const InputDecoration(
-                      labelText: 'Brand (e.g., Toyota)',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.business),
+                    decoration: InputDecoration(
+                      labelText: l10n.brand,
+                      border: const OutlineInputBorder(),
+                      prefixIcon: const Icon(Icons.business),
                     ),
-                    validator: (v) => v!.isEmpty ? 'Required' : null,
+                    validator: (v) => v!.isEmpty ? l10n.required : null,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _modelController,
-                    decoration: const InputDecoration(
-                      labelText: 'Model (e.g., Corolla)',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.directions_car),
+                    decoration: InputDecoration(
+                      labelText: l10n.model,
+                      border: const OutlineInputBorder(),
+                      prefixIcon: const Icon(Icons.directions_car),
                     ),
-                    validator: (v) => v!.isEmpty ? 'Required' : null,
+                    validator: (v) => v!.isEmpty ? l10n.required : null,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _plateController,
-                    decoration: const InputDecoration(
-                      labelText: 'License Plate (e.g., Dhaka-Metro-Ga-12-3456)',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.pin),
+                    decoration: InputDecoration(
+                      labelText: l10n.licensePlate,
+                      border: const OutlineInputBorder(),
+                      prefixIcon: const Icon(Icons.pin),
                     ),
-                    validator: (v) => v!.isEmpty ? 'Required' : null,
+                    validator: (v) => v!.isEmpty ? l10n.required : null,
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton(
@@ -117,11 +119,11 @@ class _MyVehiclesScreenState extends ConsumerState<MyVehiclesScreen> {
                           );
                           if (context.mounted) {
                             context.pop();
-                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vehicle added successfully!')));
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.vehicleAdded)));
                           }
                         } catch (e) {
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${l10n.error}: $e')));
                           }
                         }
                       }
@@ -131,7 +133,7 @@ class _MyVehiclesScreenState extends ConsumerState<MyVehiclesScreen> {
                       backgroundColor: Colors.deepPurple,
                       foregroundColor: Colors.white,
                     ),
-                    child: const Text('Save Vehicle', style: TextStyle(fontSize: 16)),
+                    child: Text(l10n.saveVehicle, style: const TextStyle(fontSize: 16)),
                   ),
                 ],
               ),
@@ -143,28 +145,29 @@ class _MyVehiclesScreenState extends ConsumerState<MyVehiclesScreen> {
   }
 
   void _deleteVehicle(VehicleModel vehicle) {
+    final l10n = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Vehicle'),
-        content: Text('Are you sure you want to delete ${vehicle.displayName}?'),
+        title: Text(l10n.deleteVehicle),
+        content: Text(l10n.deleteVehicleConfirm(vehicle.displayName)),
         actions: [
-          TextButton(onPressed: () => ctx.pop(), child: const Text('Cancel')),
+          TextButton(onPressed: () => ctx.pop(), child: Text(l10n.cancel)),
           TextButton(
             onPressed: () async {
               ctx.pop();
               try {
                 await ref.read(vehiclesControllerProvider.notifier).deleteVehicle(vehicle.id!);
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vehicle deleted.')));
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.vehicleDeleted)));
                 }
               } catch (e) {
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${l10n.error}: $e')));
                 }
               }
             },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            child: Text(l10n.delete, style: const TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -173,19 +176,20 @@ class _MyVehiclesScreenState extends ConsumerState<MyVehiclesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final vehiclesAsync = ref.watch(vehiclesControllerProvider);
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text('My Vehicles', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(l10n.myVehicles, style: const TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
         elevation: 0,
       ),
       body: vehiclesAsync.when(
         data: (vehicles) {
           if (vehicles.isEmpty) {
-            return const Center(child: Text('No vehicles found. Add one below.'));
+            return Center(child: Text(l10n.noVehicles));
           }
           return RefreshIndicator(
             onRefresh: () async => ref.invalidate(vehiclesControllerProvider),
@@ -206,13 +210,13 @@ class _MyVehiclesScreenState extends ConsumerState<MyVehiclesScreen> {
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, st) => Center(child: Text('Error: $e')),
+        error: (e, st) => Center(child: Text('${l10n.error}: $e')),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showAddVehicleBottomSheet(context),
         backgroundColor: Colors.deepPurple,
         icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text('Add Vehicle', style: TextStyle(color: Colors.white)),
+        label: Text(l10n.addVehicle, style: const TextStyle(color: Colors.white)),
       ),
     );
   }

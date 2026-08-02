@@ -3,8 +3,8 @@ import { corsHeaders } from '../_shared/cors.ts';
 import { getSupabaseAdmin } from '../_shared/supabase.ts';
 
 const STORE_ID = Deno.env.get('SSLCOMMERZ_STORE_ID') ?? 'testbox';
-const STORE_PASS = Deno.env.get('SSLCOMMERZ_STORE_PASS') ?? 'testpass';
-const IS_SANDBOX = true;
+const STORE_PASS = Deno.env.get('SSLCOMMERZ_STORE_PASSWD') ?? 'testpass';
+const IS_SANDBOX = (Deno.env.get('SSLCOMMERZ_SANDBOX') ?? 'true') !== 'false';
 const SSL_URL = IS_SANDBOX 
   ? 'https://sandbox.sslcommerz.com/gwprocess/v4/api.php'
   : 'https://securepay.sslcommerz.com/gwprocess/v4/api.php';

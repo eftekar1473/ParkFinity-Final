@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../auth_controller.dart';
+import '../../../../l10n/generated/app_localizations.dart';
 
 class RoleSelectionScreen extends ConsumerWidget {
   const RoleSelectionScreen({super.key});
@@ -9,6 +10,7 @@ class RoleSelectionScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authControllerProvider);
+    final l10n = AppLocalizations.of(context);
 
     ref.listen<AsyncValue<void>>(authControllerProvider, (previous, next) {
       next.whenOrNull(
@@ -21,7 +23,7 @@ class RoleSelectionScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Choose Your Path'),
+        title: Text(l10n.chooseYourPath),
         centerTitle: true,
       ),
       body: Padding(
@@ -29,33 +31,33 @@ class RoleSelectionScreen extends ConsumerWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text(
-              'How will you use ParkFinity?',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            Text(
+              l10n.howWillYouUse,
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 32),
             _RoleCard(
-              title: 'Find Parking',
-              subtitle: 'I want to rent parking spots.',
+              title: l10n.findParking,
+              subtitle: l10n.findParkingSub,
               icon: Icons.directions_car,
               color: Colors.blueAccent,
               isLoading: authState.isLoading,
               onTap: () {
                 ref.read(authControllerProvider.notifier).updateRole('Rider').then((_) {
-                  if (context.mounted) context.go('/rider/explore');
+                  if (context.mounted) context.go('/kyc');
                 });
               },
             ),
             const SizedBox(height: 24),
             _RoleCard(
-              title: 'Host Parking',
-              subtitle: 'I want to earn money hosting spots.',
+              title: l10n.hostParking,
+              subtitle: l10n.hostParkingSub,
               icon: Icons.home_work,
               color: Colors.deepOrange,
               isLoading: authState.isLoading,
               onTap: () {
                 ref.read(authControllerProvider.notifier).updateRole('Owner').then((_) {
-                  if (context.mounted) context.go('/owner/dashboard');
+                  if (context.mounted) context.go('/kyc');
                 });
               },
             ),
@@ -91,9 +93,9 @@ class _RoleCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          border: Border.all(color: color.withOpacity(0.5), width: 2),
+          border: Border.all(color: color.withValues(alpha: 0.5), width: 2),
           borderRadius: BorderRadius.circular(16),
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
         ),
         child: Row(
           children: [

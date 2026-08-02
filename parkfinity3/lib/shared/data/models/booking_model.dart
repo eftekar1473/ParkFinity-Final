@@ -11,10 +11,16 @@ class BookingModel {
   final double totalAmount;
   final double commissionAmount;
   final double ownerEarnings;
+  final double baseAmount;
+  final double overstayAmount;
+  final String? durationType;
+  final String? vehicleType;
+  final int slotQty;
+  final bool isRefunded;
   final String status;
   final DateTime? createdAt;
   final DateTime? updatedAt;
-  
+
   // Nested relation
   final ListingModel? listing;
 
@@ -29,6 +35,12 @@ class BookingModel {
     required this.totalAmount,
     required this.commissionAmount,
     required this.ownerEarnings,
+    this.baseAmount = 0,
+    this.overstayAmount = 0,
+    this.durationType,
+    this.vehicleType,
+    this.slotQty = 1,
+    this.isRefunded = false,
     this.status = 'Pending',
     this.createdAt,
     this.updatedAt,
@@ -47,6 +59,12 @@ class BookingModel {
       totalAmount: (json['total_amount'] as num).toDouble(),
       commissionAmount: (json['commission_amount'] as num).toDouble(),
       ownerEarnings: (json['owner_earnings'] as num).toDouble(),
+      baseAmount: (json['base_amount'] as num?)?.toDouble() ?? 0,
+      overstayAmount: (json['overstay_amount'] as num?)?.toDouble() ?? 0,
+      durationType: json['duration_type'] as String?,
+      vehicleType: json['vehicle_type'] as String?,
+      slotQty: (json['slot_qty'] as num?)?.toInt() ?? 1,
+      isRefunded: json['is_refunded'] as bool? ?? false,
       status: json['status'] as String? ?? 'Pending',
       createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
       updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
