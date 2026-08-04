@@ -8,6 +8,8 @@ import '../controllers/bookings_controller.dart';
 import '../../../../shared/data/models/booking_model.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../../../wallet/presentation/controllers/wallet_provider.dart';
+import '../../../parking/data/qr_repository.dart';
+import '../../../parking/presentation/screens/qr_scan_screen.dart';
 import '../../../../l10n/generated/app_localizations.dart';
 
 class ActiveParkingScreen extends ConsumerStatefulWidget {
@@ -149,24 +151,23 @@ class _ActiveParkingScreenState extends ConsumerState<ActiveParkingScreen> {
                   const SizedBox(width: 16),
                   IconButton(
                       onPressed: () { if (count > 1) setModal(() => count--); },
-                      icon: const Icon(Icons.remove_circle_outline, color: Colors.deepPurple)),
+                      icon: const Icon(Icons.remove_circle_outline)),
                   Text('$count', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                   IconButton(
                       onPressed: () => setModal(() => count++),
-                      icon: const Icon(Icons.add_circle_outline, color: Colors.deepPurple)),
+                      icon: const Icon(Icons.add_circle_outline)),
                 ],
               ),
               const SizedBox(height: 8),
               Text(l10n.serverPricesFinal,
-                  style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                  style: TextStyle(
+                      color: Theme.of(ctx).hintColor, fontSize: 12)),
               const SizedBox(height: 20),
               SizedBox(
                 width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      backgroundColor: Colors.deepPurple,
-                      foregroundColor: Colors.white),
+                child: FilledButton(
+                  style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16)),
                   onPressed: () async {
                     Navigator.pop(ctx);
                     await _submitExtend(booking, durationType, count);
@@ -210,6 +211,21 @@ class _ActiveParkingScreenState extends ConsumerState<ActiveParkingScreen> {
     }
   }
 
+  /// Opens the camera scanner and refreshes the booking list on success. The
+  /// server decides whether the scan is valid, so the button stays enabled and
+  /// the message from `check_in` / `check_out` is what the rider sees.
+  Future<void> _scan(BookingModel booking, ScanMode mode) async {
+    final res = await context.push<ScanResult>(
+        mode == ScanMode.checkIn ? '/scan/in' : '/scan/out');
+    if (res == null || !mounted) return;
+
+    ref.invalidate(riderBookingsProvider);
+    ref.invalidate(walletControllerProvider);
+    setState(() => _activeBooking = null); // force timer re-sync
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(res.message)));
+  }
+
   String get _formattedTime {
     if (_secondsRemaining <= 0) return '00:00:00';
     int hours = _secondsRemaining ~/ 3600;
@@ -224,12 +240,11 @@ class _ActiveParkingScreenState extends ConsumerState<ActiveParkingScreen> {
     final l10n = AppLocalizations.of(context);
     final bookingsAsync = ref.watch(riderBookingsProvider);
 
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text(l10n.activeSession),
-        backgroundColor: Colors.white,
-        elevation: 0,
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.close),
@@ -253,9 +268,11 @@ class _ActiveParkingScreenState extends ConsumerState<ActiveParkingScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.local_parking_rounded, size: 64, color: Colors.grey),
+                    Icon(Icons.local_parking_rounded,
+                        size: 64, color: theme.hintColor),
                     const SizedBox(height: 16),
-                    Text(l10n.noActiveBookings, style: const TextStyle(fontSize: 20, color: Colors.grey)),
+                    Text(l10n.noActiveBookings,
+                        style: TextStyle(fontSize: 20, color: theme.hintColor)),
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: () => context.go('/rider/explore'),
@@ -289,7 +306,10 @@ class _ActiveParkingScreenState extends ConsumerState<ActiveParkingScreen> {
             children: [
               Text(
                 l10n.timeRemaining,
-                style: const TextStyle(fontSize: 20, color: Colors.grey, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                    fontSize: 20,
+                    color: theme.hintColor,
+                    fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 48),
               
@@ -303,9 +323,9 @@ class _ActiveParkingScreenState extends ConsumerState<ActiveParkingScreen> {
                     child: CircularProgressIndicator(
                       value: progress,
                       strokeWidth: 12,
-                      backgroundColor: Colors.grey[200],
+                      backgroundColor: theme.colorScheme.surfaceContainerHighest,
                       valueColor: AlwaysStoppedAnimation<Color>(
-                        progress > 0.1 ? Colors.green : Colors.red,
+                        progress > 0.1 ? Colors.green : theme.colorScheme.error,
                       ),
                     ),
                   ),
@@ -325,7 +345,9 @@ class _ActiveParkingScreenState extends ConsumerState<ActiveParkingScreen> {
                           padding: const EdgeInsets.only(top: 8.0),
                           child: Text(
                             l10n.expiringSoon,
-                            style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                                color: theme.colorScheme.error,
+                                fontWeight: FontWeight.bold),
                           ),
                         )
                     ],
@@ -339,19 +361,21 @@ class _ActiveParkingScreenState extends ConsumerState<ActiveParkingScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.grey[100],
+                  color: theme.colorScheme.surfaceContainerLow,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.location_on, color: Colors.deepPurple, size: 32),
+                    Icon(Icons.location_on,
+                        color: theme.colorScheme.primary, size: 32),
                     const SizedBox(width: 16),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(booking.listing?.title ?? l10n.parkingSpot, style: const TextStyle(fontWeight: FontWeight.bold)),
-                          Text(booking.listing?.address ?? '', style: const TextStyle(color: Colors.grey)),
+                          Text(booking.listing?.address ?? '',
+                              style: TextStyle(color: theme.hintColor)),
                         ],
                       ),
                     ),
@@ -371,8 +395,6 @@ class _ActiveParkingScreenState extends ConsumerState<ActiveParkingScreen> {
                       label: Text(l10n.extend),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        foregroundColor: Colors.deepPurple,
-                        side: const BorderSide(color: Colors.deepPurple),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                     ),
@@ -385,8 +407,6 @@ class _ActiveParkingScreenState extends ConsumerState<ActiveParkingScreen> {
                       label: Text(l10n.navigate),
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        backgroundColor: Colors.deepPurple,
-                        foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                     ),
@@ -394,10 +414,36 @@ class _ActiveParkingScreenState extends ConsumerState<ActiveParkingScreen> {
                 ],
               ),
               const SizedBox(height: 12),
+              // Before check-in the rider scans to start; once Active the same
+              // poster ends the session and settles any overstay charge.
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () => _scan(
+                    booking,
+                    booking.checkedInAt == null
+                        ? ScanMode.checkIn
+                        : ScanMode.checkOut,
+                  ),
+                  icon: const Icon(Icons.qr_code_scanner),
+                  label: Text(booking.checkedInAt == null
+                      ? l10n.checkIn
+                      : l10n.checkOut),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4),
               TextButton.icon(
                 onPressed: () => _cancel(booking),
-                icon: const Icon(Icons.cancel_outlined, color: Colors.red),
-                label: Text(l10n.cancelBooking, style: const TextStyle(color: Colors.red)),
+                icon: Icon(Icons.cancel_outlined,
+                    color: Theme.of(context).colorScheme.error),
+                label: Text(l10n.cancelBooking,
+                    style: TextStyle(
+                        color: Theme.of(context).colorScheme.error)),
               ),
               const SizedBox(height: 16),
             ],

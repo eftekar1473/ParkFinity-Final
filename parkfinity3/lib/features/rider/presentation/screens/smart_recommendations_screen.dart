@@ -50,8 +50,8 @@ class SmartRecommendationsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.smartRecommendations),
-        backgroundColor: Colors.deepPurple,
-        foregroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
       ),
       body: recsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -104,7 +104,7 @@ class _RecCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: isTop
-            ? const BorderSide(color: Colors.deepPurple, width: 2)
+            ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 2)
             : BorderSide.none,
       ),
       child: InkWell(
@@ -121,22 +121,23 @@ class _RecCard extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.deepPurple,
+                    color: Theme.of(context).colorScheme.primary,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text('⭐ ${l10n.topPick}',
-                      style: const TextStyle(
-                          color: Colors.white,
+                      style: TextStyle(
+                          color: Theme.of(context).colorScheme.onPrimary,
                           fontSize: 12,
                           fontWeight: FontWeight.bold)),
                 ),
               Row(
                 children: [
                   CircleAvatar(
-                    backgroundColor: Colors.deepPurple.shade50,
+                    backgroundColor: Theme.of(context).colorScheme.primaryContainer,
                     child: Text('$rank',
-                        style: const TextStyle(
-                            color: Colors.deepPurple,
+                        style: TextStyle(
+                            color:
+                                Theme.of(context).colorScheme.onPrimaryContainer,
                             fontWeight: FontWeight.bold)),
                   ),
                   const SizedBox(width: 12),
@@ -153,7 +154,7 @@ class _RecCard extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                                color: Colors.grey[600], fontSize: 13)),
+                                color: Theme.of(context).hintColor, fontSize: 13)),
                       ],
                     ),
                   ),
@@ -164,13 +165,14 @@ class _RecCard extends StatelessWidget {
                 spacing: 8,
                 runSpacing: 4,
                 children: [
-                  _pill(Icons.near_me,
+                  _pill(context, Icons.near_me,
                       '${scored.distanceKm.toStringAsFixed(1)} km'),
-                  _pill(Icons.attach_money,
+                  _pill(context, Icons.attach_money,
                       '৳${l.hourlyRate?.toInt() ?? 0}/hr'),
                   if (scored.rating > 0)
-                    _pill(Icons.star, scored.rating.toStringAsFixed(1)),
-                  _pill(Icons.event_available, '${l.availableSlots} ${l10n.freeSpots}'),
+                    _pill(context, Icons.star, scored.rating.toStringAsFixed(1)),
+                  _pill(context, Icons.event_available,
+                      '${l.availableSlots} ${l10n.freeSpots}'),
                 ],
               ),
               if (isTop && scored.explanation != null) ...[
@@ -178,19 +180,21 @@ class _RecCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.deepPurple.shade50,
+                    color: Theme.of(context).colorScheme.primaryContainer,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.auto_awesome,
-                          size: 18, color: Colors.deepPurple),
+                      Icon(Icons.auto_awesome,
+                          size: 18,
+                          color:
+                              Theme.of(context).colorScheme.onPrimaryContainer),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(scored.explanation!,
                             style: TextStyle(
-                                color: Colors.deepPurple.shade900,
+                                color: Theme.of(context).colorScheme.onPrimaryContainer,
                                 fontStyle: FontStyle.italic)),
                       ),
                     ],
@@ -204,17 +208,17 @@ class _RecCard extends StatelessWidget {
     );
   }
 
-  Widget _pill(IconData icon, String text) {
+  Widget _pill(BuildContext context, IconData icon, String text) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: Colors.deepPurple),
+          Icon(icon, size: 14, color: Theme.of(context).colorScheme.primary),
           const SizedBox(width: 4),
           Text(text,
               style: const TextStyle(

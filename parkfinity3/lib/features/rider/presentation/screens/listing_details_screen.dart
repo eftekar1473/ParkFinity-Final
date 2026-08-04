@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/data/repositories/groq_repository.dart';
 import '../../data/repositories/reviews_repository.dart';
 import '../../../shared/data/profiles_repository.dart';
+import '../../../shared/presentation/screens/photo_viewer_screen.dart';
 import '../../../../l10n/generated/app_localizations.dart';
 
 class ListingDetailsScreen extends ConsumerStatefulWidget {
@@ -27,6 +28,9 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
   bool _isLoadingSummary = false;
   VideoPlayerController? _videoController;
 
+  final PageController _galleryController = PageController();
+  int _photoIndex = 0;
+
   ListingModel get l => widget.listing;
 
   @override
@@ -38,6 +42,7 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
 
   @override
   void dispose() {
+    _galleryController.dispose();
     _videoController?.dispose();
     super.dispose();
   }
@@ -81,8 +86,23 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
     }
   }
 
+  /// Dials the spot's contact number, falling back to the host's profile phone.
+  Future<void> _call(String? phone) async {
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    if (phone == null || phone.trim().isEmpty) {
+      messenger.showSnackBar(SnackBar(content: Text(l10n.noPhoneOnFile)));
+      return;
+    }
+    final uri = Uri(scheme: 'tel', path: phone.trim());
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      messenger.showSnackBar(SnackBar(content: Text(l10n.couldNotOpenDialer)));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final id = l.id;
     final ratingAsync = id == null
         ? const AsyncValue<RatingSummary>.data(RatingSummary.empty)
@@ -90,7 +110,7 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
     final hostAsync = ref.watch(hostProfileProvider(l.ownerId));
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: theme.colorScheme.surface,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -98,9 +118,10 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
         leading: Padding(
           padding: const EdgeInsets.all(8.0),
           child: CircleAvatar(
-            backgroundColor: Colors.white,
+            backgroundColor: theme.colorScheme.surfaceContainerLow,
             child: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.black),
+              icon: Icon(Icons.arrow_back,
+                  color: theme.colorScheme.onSurface),
               onPressed: () => context.pop(),
             ),
           ),
@@ -143,7 +164,7 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
                         _buildVideo(),
                       ],
                       const SizedBox(height: 24),
-                      _buildMapPreview(),
+                      _buildMapPreview(hostAsync),
                       const SizedBox(height: 24),
                       _buildReviewsSection(ratingAsync),
                     ],
@@ -160,28 +181,90 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
 
   // -------------------- Gallery --------------------
   Widget _buildGallery() {
+    final theme = Theme.of(context);
     if (l.photos.isEmpty) {
       return Container(
         height: 300,
-        color: Colors.deepPurple.shade100,
-        child: const Center(
+        color: theme.colorScheme.surfaceContainerHighest,
+        child: Center(
             child: Icon(Icons.local_parking,
-                size: 80, color: Colors.deepPurple)),
+                size: 80, color: theme.colorScheme.primary)),
       );
     }
     return SizedBox(
       height: 300,
-      child: PageView.builder(
-        itemCount: l.photos.length,
-        itemBuilder: (_, i) => Image.network(
-          l.photos[i],
-          fit: BoxFit.cover,
-          errorBuilder: (_, _, _) => Container(
-            color: Colors.deepPurple.shade100,
-            child: const Icon(Icons.broken_image,
-                size: 60, color: Colors.deepPurple),
+      child: Stack(
+        children: [
+          PageView.builder(
+            controller: _galleryController,
+            itemCount: l.photos.length,
+            onPageChanged: (i) => setState(() => _photoIndex = i),
+            itemBuilder: (_, i) => GestureDetector(
+              // Tap opens the pinch-zoom viewer; the 300px strip is too small
+              // to judge a parking spot from.
+              onTap: () => PhotoViewerScreen.open(context,
+                  photos: l.photos, initialIndex: i),
+              child: Image.network(
+                l.photos[i],
+                fit: BoxFit.cover,
+                loadingBuilder: (_, child, progress) => progress == null
+                    ? child
+                    : Container(
+                        color: theme.colorScheme.surfaceContainerHighest,
+                        child: const Center(
+                            child: CircularProgressIndicator(strokeWidth: 2)),
+                      ),
+                errorBuilder: (_, _, _) => Container(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  child: Icon(Icons.broken_image,
+                      size: 60, color: theme.colorScheme.primary),
+                ),
+              ),
+            ),
           ),
-        ),
+          // Counter pill: tells the rider more photos exist at all.
+          if (l.photos.length > 1)
+            Positioned(
+              right: 16,
+              bottom: 16,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text('${_photoIndex + 1}/${l.photos.length}',
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600)),
+              ),
+            ),
+          if (l.photos.length > 1)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 16,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  l.photos.length.clamp(0, 8),
+                  (i) => Container(
+                    width: 7,
+                    height: 7,
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: i == _photoIndex
+                          ? Colors.white
+                          : Colors.white54,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -189,6 +272,7 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
   // -------------------- Title + rating --------------------
   Widget _buildTitleRow(AsyncValue<RatingSummary> ratingAsync) {
     final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -202,11 +286,11 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  const Icon(Icons.location_on, color: Colors.grey, size: 16),
+                  Icon(Icons.location_on, color: theme.hintColor, size: 16),
                   const SizedBox(width: 4),
                   Expanded(
                       child: Text(l.address,
-                          style: TextStyle(color: Colors.grey[700]))),
+                          style: TextStyle(color: theme.hintColor))),
                 ],
               ),
             ],
@@ -245,6 +329,7 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
   // -------------------- Host --------------------
   Widget _buildHost(AsyncValue<HostProfile?> hostAsync) {
     final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
     return hostAsync.when(
       data: (host) {
         final name = host?.fullName?.trim();
@@ -253,30 +338,39 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
           children: [
             CircleAvatar(
               radius: 24,
-              backgroundColor: Colors.deepPurple.shade100,
+              backgroundColor: theme.colorScheme.surfaceContainerHighest,
               backgroundImage:
                   (host?.avatarUrl != null && host!.avatarUrl!.isNotEmpty)
                       ? NetworkImage(host.avatarUrl!)
                       : null,
               child: (host?.avatarUrl == null || host!.avatarUrl!.isEmpty)
-                  ? const Icon(Icons.person, color: Colors.deepPurple)
+                  ? Icon(Icons.person, color: theme.colorScheme.primary)
                   : null,
             ),
             const SizedBox(width: 16),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.hostedBy(
-                      name?.isNotEmpty == true ? name! : l10n.parkfinityHost),
-                  style: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                if (joined != null)
-                  Text(l10n.joinedIn(DateFormat.y().format(joined)),
-                      style:
-                          TextStyle(color: Colors.grey[600], fontSize: 14)),
-              ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.hostedBy(
+                        name?.isNotEmpty == true ? name! : l10n.parkfinityHost),
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  if (joined != null)
+                    Text(l10n.joinedIn(DateFormat.y().format(joined)),
+                        style:
+                            TextStyle(color: theme.hintColor, fontSize: 14)),
+                ],
+              ),
+            ),
+            // Tap-to-dial: the listing's own number wins, host profile otherwise.
+            IconButton(
+              tooltip: l10n.callOwner,
+              icon: const Icon(Icons.phone),
+              color: theme.colorScheme.primary,
+              onPressed: () => _call(l.contactPhone ?? host?.phoneNumber),
             ),
           ],
         );
@@ -291,6 +385,7 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
   // -------------------- Per-type slots --------------------
   Widget _buildSlots() {
     final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
     final cap = l.slotCapacity;
     if (cap.isEmpty) return const SizedBox.shrink();
     return Column(
@@ -305,14 +400,18 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
           children: cap.entries.map((e) {
             final free = l.slotAvailable[e.key] ?? 0;
             final full = free <= 0;
+            // Green/grey stay literal: they carry the free-vs-full meaning and
+            // must not shift with the brand colour.
             return Container(
               padding:
                   const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: full ? Colors.grey.shade200 : Colors.green.shade50,
+                color: full
+                    ? theme.colorScheme.surfaceContainerHighest
+                    : Colors.green.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                    color: full ? Colors.grey : Colors.green.shade300),
+                    color: full ? theme.dividerColor : Colors.green.shade300),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -321,7 +420,7 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
                       style: const TextStyle(fontWeight: FontWeight.bold)),
                   Text(l10n.freeOf(free, e.value),
                       style: TextStyle(
-                          color: full ? Colors.grey[700] : Colors.green[800],
+                          color: full ? theme.hintColor : Colors.green.shade700,
                           fontSize: 13)),
                 ],
               ),
@@ -335,6 +434,7 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
   // -------------------- Pricing tiers --------------------
   Widget _buildPricing() {
     final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
     final tiers = <MapEntry<String, double>>[
       if (l.hourlyRate != null) MapEntry(l10n.hourly, l.hourlyRate!),
       if (l.dailyRate != null) MapEntry(l10n.daily, l.dailyRate!),
@@ -357,17 +457,22 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(
-                      color: Colors.deepPurple.shade50,
+                      color: theme.colorScheme.primaryContainer,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Column(
                       children: [
                         Text('৳${t.value.toInt()}',
-                            style: const TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 16)),
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                color:
+                                    theme.colorScheme.onPrimaryContainer)),
                         Text(t.key,
                             style: TextStyle(
-                                color: Colors.grey[700], fontSize: 12)),
+                                color: theme.colorScheme.onPrimaryContainer
+                                    .withValues(alpha: 0.75),
+                                fontSize: 12)),
                       ],
                     ),
                   ))
@@ -425,7 +530,8 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
               children: [
                 Text(e.key,
                     style: const TextStyle(fontWeight: FontWeight.w500)),
-                Text(hours, style: TextStyle(color: Colors.grey[700])),
+                Text(hours,
+                    style: TextStyle(color: Theme.of(context).hintColor)),
               ],
             ),
           );
@@ -447,7 +553,9 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
           l.description?.isNotEmpty == true
               ? l.description!
               : l10n.noDescription,
-          style: TextStyle(color: Colors.grey[800], height: 1.5),
+          style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              height: 1.5),
         ),
       ],
     );
@@ -491,7 +599,7 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
   }
 
   // -------------------- Map preview --------------------
-  Widget _buildMapPreview() {
+  Widget _buildMapPreview(AsyncValue<HostProfile?> hostAsync) {
     final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -521,15 +629,31 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
           ),
         ),
         const SizedBox(height: 12),
-        OutlinedButton.icon(
-          onPressed: _navigate,
-          icon: const Icon(Icons.directions),
-          label: Text(l10n.navigate),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: Colors.deepPurple,
-            side: const BorderSide(color: Colors.deepPurple),
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _navigate,
+                icon: const Icon(Icons.directions),
+                label: Text(l10n.navigate),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () =>
+                    _call(l.contactPhone ?? hostAsync.value?.phoneNumber),
+                icon: const Icon(Icons.phone),
+                label: Text(l10n.callOwner),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -538,13 +662,14 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
   // -------------------- Reviews / AI summary --------------------
   Widget _buildReviewsSection(AsyncValue<RatingSummary> ratingAsync) {
     final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
     final count = ratingAsync.value?.reviewCount ?? 0;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            const Icon(Icons.auto_awesome, color: Colors.deepPurple),
+            Icon(Icons.auto_awesome, color: theme.colorScheme.primary),
             const SizedBox(width: 8),
             Text(l10n.reviewsWithCount(count),
                 style: const TextStyle(
@@ -558,34 +683,34 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.deepPurple.shade50,
+              color: theme.colorScheme.primaryContainer,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.deepPurple.shade100),
+              border: Border.all(color: theme.dividerColor),
             ),
             child: Text(_aiSummary!,
                 style: TextStyle(
-                    color: Colors.deepPurple.shade900,
+                    color: theme.colorScheme.onPrimaryContainer,
                     height: 1.5,
                     fontStyle: FontStyle.italic)),
           )
         else
-          Text(l10n.noReviewsYet,
-              style: TextStyle(color: Colors.grey[600])),
+          Text(l10n.noReviewsYet, style: TextStyle(color: theme.hintColor)),
       ],
     );
   }
 
   Widget _chip(IconData icon, String label) {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.grey[200],
+        color: theme.colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 18, color: Colors.deepPurple),
+          Icon(icon, size: 18, color: theme.colorScheme.primary),
           const SizedBox(width: 8),
           Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
         ],
@@ -596,6 +721,7 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
   // -------------------- Sticky bottom bar --------------------
   Widget _buildBottomBar() {
     final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
     final full = l.availableSlots <= 0;
     return Positioned(
       bottom: 0,
@@ -604,7 +730,7 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
       child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: theme.colorScheme.surfaceContainerLow,
           boxShadow: [
             BoxShadow(
                 color: Colors.black.withValues(alpha: 0.05),
@@ -618,30 +744,29 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(l10n.price, style: const TextStyle(color: Colors.grey)),                Row(
+                Text(l10n.price, style: TextStyle(color: theme.hintColor)),
+                Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text('৳${l.hourlyRate?.toInt() ?? 0}',
                         style: const TextStyle(
                             fontSize: 24, fontWeight: FontWeight.bold)),
-                    const Text('/hr',
-                        style: TextStyle(fontSize: 16, color: Colors.grey)),
+                    Text('/hr',
+                        style:
+                            TextStyle(fontSize: 16, color: theme.hintColor)),
                   ],
                 ),
               ],
             ),
             const SizedBox(width: 24),
             Expanded(
-              child: ElevatedButton(
+              child: FilledButton(
                 onPressed: full
                     ? null
                     : () => context.push('/rider/explore/checkout',
                         extra: l),
-                style: ElevatedButton.styleFrom(
+                style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  backgroundColor: Colors.deepPurple,
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor: Colors.grey,
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
                 ),

@@ -6,12 +6,14 @@ class HostProfile {
   final String id;
   final String? fullName;
   final String? avatarUrl;
+  final String? phoneNumber;
   final DateTime? joinedAt;
 
   HostProfile({
     required this.id,
     this.fullName,
     this.avatarUrl,
+    this.phoneNumber,
     this.joinedAt,
   });
 
@@ -19,6 +21,7 @@ class HostProfile {
         id: json['id'] as String,
         fullName: json['full_name'] as String?,
         avatarUrl: json['avatar_url'] as String?,
+        phoneNumber: json['phone_number'] as String?,
         joinedAt: json['created_at'] != null
             ? DateTime.tryParse(json['created_at'].toString())
             : null,
@@ -35,8 +38,10 @@ class ProfilesRepository {
 
   Future<HostProfile?> getProfile(String userId) async {
     final rows = await _client
-        .from('profiles')
-        .select('id, full_name, avatar_url, created_at')
+        // public_profiles, not profiles: RLS on the base table only exposes the
+        // caller's own row, so a rider reading a host's card needs the view.
+        .from('public_profiles')
+        .select('id, full_name, avatar_url, phone_number, created_at')
         .eq('id', userId)
         .limit(1);
     if ((rows as List).isEmpty) return null;

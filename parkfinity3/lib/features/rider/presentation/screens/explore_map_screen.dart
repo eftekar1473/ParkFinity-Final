@@ -2,12 +2,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:geocoding/geocoding.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart'; // StateProvider (moved to legacy in Riverpod 3)
 import '../../../owner/presentation/controllers/listings_controller.dart';
+import '../../../parking/data/places_repository.dart';
 import '../../data/ai_recommendation_service.dart';
 import '../../data/models/listing_filter.dart';
 import '../controllers/rider_history_provider.dart';
@@ -45,6 +45,17 @@ class _ExploreMapScreenState extends ConsumerState<ExploreMapScreen> {
   final Completer<GoogleMapController> _controller =
       Completer<GoogleMapController>();
   final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocus = FocusNode();
+
+  /// Debounce so a fast typist doesn't fire one Places call per keystroke.
+  Timer? _debounce;
+  List<PlaceSuggestion> _suggestions = const [];
+  bool _searching = false;
+
+  /// Pin for the place the rider searched for, kept apart from the parking
+  /// markers so "where I looked" never reads as "a spot you can book".
+  LatLng? _searchedPoint;
+  String _searchedLabel = '';
 
   static const CameraPosition _initialPosition = CameraPosition(
     target: LatLng(23.8103, 90.4125), // Dhaka fallback until GPS resolves
@@ -59,9 +70,13 @@ class _ExploreMapScreenState extends ConsumerState<ExploreMapScreen> {
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _searchController.dispose();
+    _searchFocus.dispose();
     super.dispose();
   }
+
+  // -------------------- Location --------------------
 
   Future<void> _checkLocationPermission() async {
     try {
@@ -82,38 +97,96 @@ class _ExploreMapScreenState extends ConsumerState<ExploreMapScreen> {
   }
 
   Future<void> _goToCurrentLocation() async {
-    final position = await Geolocator.getCurrentPosition();
-    ref.read(riderPositionProvider.notifier).state = position;
-    final controller = await _controller.future;
-    await controller.animateCamera(CameraUpdate.newCameraPosition(
-      CameraPosition(
-        target: LatLng(position.latitude, position.longitude),
-        zoom: 16.0,
-      ),
-    ));
-  }
-
-  Future<void> _searchPlace(String query) async {
-    if (query.trim().isEmpty) return;
     try {
-      final locations = await Geocoding().locationFromAddress(query);
-      if (locations.isNotEmpty) {
-        final location = locations.first;
-        final controller = await _controller.future;
-        await controller.animateCamera(CameraUpdate.newCameraPosition(
-          CameraPosition(
-            target: LatLng(location.latitude, location.longitude),
-            zoom: 15.0,
-          ),
-        ));
-      }
+      final position = await Geolocator.getCurrentPosition();
+      if (!mounted) return;
+      ref.read(riderPositionProvider.notifier).state = position;
+      final controller = await _controller.future;
+      await controller.animateCamera(CameraUpdate.newCameraPosition(
+        CameraPosition(
+          target: LatLng(position.latitude, position.longitude),
+          zoom: 16.0,
+        ),
+      ));
     } catch (_) {
       if (mounted) {
         final l10n = AppLocalizations.of(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.locationNotFound)));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(l10n.locationNotFound)));
       }
     }
+  }
+
+  // -------------------- Search --------------------
+
+  void _onQueryChanged(String value) {
+    _debounce?.cancel();
+    if (value.trim().length < 2) {
+      setState(() {
+        _suggestions = const [];
+        _searching = false;
+      });
+      return;
+    }
+    setState(() => _searching = true);
+    _debounce = Timer(const Duration(milliseconds: 350), () => _fetch(value));
+  }
+
+  Future<void> _fetch(String value) async {
+    final pos = ref.read(riderPositionProvider);
+    final results = await ref.read(placesRepositoryProvider).autocomplete(
+          value,
+          lat: pos?.latitude,
+          lng: pos?.longitude,
+        );
+    // A slower earlier request must not overwrite a newer query's results.
+    if (!mounted || _searchController.text.trim() != value.trim()) return;
+    setState(() {
+      _suggestions = results;
+      _searching = false;
+    });
+  }
+
+  Future<void> _choose(PlaceSuggestion s) async {
+    _searchFocus.unfocus();
+    setState(() {
+      _suggestions = const [];
+      _searching = true;
+    });
+
+    final loc = await ref.read(placesRepositoryProvider).resolve(s);
+    if (!mounted) return;
+    setState(() => _searching = false);
+
+    if (loc == null) {
+      final l10n = AppLocalizations.of(context);
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l10n.locationNotFound)));
+      return;
+    }
+
+    _searchController.text = s.title;
+    setState(() {
+      _searchedPoint = LatLng(loc.lat, loc.lng);
+      _searchedLabel = loc.address.isNotEmpty ? loc.address : s.title;
+    });
+
+    final controller = await _controller.future;
+    await controller.animateCamera(CameraUpdate.newCameraPosition(
+      CameraPosition(target: _searchedPoint!, zoom: 15.5),
+    ));
+  }
+
+  void _clearSearch() {
+    _debounce?.cancel();
+    _searchController.clear();
+    _searchFocus.unfocus();
+    setState(() {
+      _suggestions = const [];
+      _searching = false;
+      _searchedPoint = null;
+      _searchedLabel = '';
+    });
   }
 
   Future<void> _openFilters() async {
@@ -123,6 +196,8 @@ class _ExploreMapScreenState extends ConsumerState<ExploreMapScreen> {
       ref.read(listingFilterProvider.notifier).state = updated;
     }
   }
+
+  // -------------------- Markers --------------------
 
   /// Listings after applying the active filter (+ availability).
   List<ListingModel> _visibleListings(
@@ -138,16 +213,16 @@ class _ExploreMapScreenState extends ConsumerState<ExploreMapScreen> {
   }
 
   Set<Marker> _buildMarkers(List<ListingModel> listings, AppLocalizations l10n) {
-    return listings.map((listing) {
+    final markers = <Marker>{};
+
+    // Parking spots: violet when bookable, rose + faded when full.
+    for (final listing in listings) {
       final available = listing.availableSlots > 0;
-      return Marker(
-        markerId: MarkerId(listing.id ?? listing.hashCode.toString()),
+      markers.add(Marker(
+        markerId: MarkerId('spot_${listing.id ?? listing.hashCode}'),
         position: LatLng(listing.latitude, listing.longitude),
-        // Greyed marker when full so riders can still see the spot exists.
         icon: BitmapDescriptor.defaultMarkerWithHue(
-          available
-              ? BitmapDescriptor.hueViolet
-              : BitmapDescriptor.hueRose,
+          available ? BitmapDescriptor.hueViolet : BitmapDescriptor.hueRose,
         ),
         alpha: available ? 1.0 : 0.5,
         infoWindow: InfoWindow(
@@ -155,15 +230,43 @@ class _ExploreMapScreenState extends ConsumerState<ExploreMapScreen> {
           snippet: available
               ? '৳${listing.hourlyRate?.toInt() ?? 0}/hr · ${listing.availableSlots} ${l10n.freeSpots}'
               : l10n.fullNoSlots,
-          onTap: () =>
-              context.push('/rider/explore/details', extra: listing),
+          onTap: () => context.push('/rider/explore/details', extra: listing),
         ),
-      );
-    }).toSet();
+      ));
+    }
+
+    // Searched destination: azure, so it can never be mistaken for a spot.
+    final point = _searchedPoint;
+    if (point != null) {
+      markers.add(Marker(
+        markerId: const MarkerId('searched'),
+        position: point,
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+        infoWindow: InfoWindow(title: _searchedLabel),
+      ));
+    }
+
+    // Rider: green dot marker in addition to the platform blue dot, because the
+    // blue dot disappears the moment the OS stops publishing a fix.
+    final pos = ref.watch(riderPositionProvider);
+    if (pos != null) {
+      markers.add(Marker(
+        markerId: const MarkerId('me'),
+        position: LatLng(pos.latitude, pos.longitude),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+        zIndexInt: 2,
+        infoWindow: InfoWindow(title: l10n.yourLocation),
+      ));
+    }
+
+    return markers;
   }
+
+  // -------------------- AI sheet --------------------
 
   void _showAskAIBottomSheet(List<ListingModel> listings) {
     final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
     final aiController = TextEditingController();
     bool isAiLoading = false;
     String aiResponse = '';
@@ -190,10 +293,10 @@ class _ExploreMapScreenState extends ConsumerState<ExploreMapScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(l10n.askParkfinityAi,
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: Colors.deepPurple)),
+                          color: theme.colorScheme.primary)),
                   const SizedBox(height: 8),
                   Text(l10n.aiPromptHint),
                   const SizedBox(height: 16),
@@ -206,7 +309,7 @@ class _ExploreMapScreenState extends ConsumerState<ExploreMapScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  ElevatedButton(
+                  FilledButton(
                     onPressed: isAiLoading
                         ? null
                         : () async {
@@ -222,8 +325,8 @@ class _ExploreMapScreenState extends ConsumerState<ExploreMapScreen> {
                             final pos = ref.read(riderPositionProvider);
                             final history = await ref
                                 .read(riderHistoryProfileProvider.future)
-                                .catchError((_) =>
-                                    const RiderHistoryProfile());
+                                .catchError(
+                                    (_) => const RiderHistoryProfile());
 
                             final best = await aiService.getBest(
                               listings: listings,
@@ -244,17 +347,14 @@ class _ExploreMapScreenState extends ConsumerState<ExploreMapScreen> {
                               }
                             });
                           },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.deepPurple,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
+                    style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16)),
                     child: isAiLoading
                         ? const SizedBox(
                             height: 20,
                             width: 20,
-                            child: CircularProgressIndicator(
-                                color: Colors.white))
+                            child:
+                                CircularProgressIndicator(strokeWidth: 2))
                         : Text(l10n.askAi),
                   ),
                   if (aiResponse.isNotEmpty) ...[
@@ -270,10 +370,9 @@ class _ExploreMapScreenState extends ConsumerState<ExploreMapScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.deepPurple.shade50,
+                          color: theme.colorScheme.primaryContainer,
                           borderRadius: BorderRadius.circular(12),
-                          border:
-                              Border.all(color: Colors.deepPurple.shade200),
+                          border: Border.all(color: theme.dividerColor),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -281,17 +380,22 @@ class _ExploreMapScreenState extends ConsumerState<ExploreMapScreen> {
                             if (pick != null)
                               Text(
                                 '${pick!.listing.title} · ৳${pick!.listing.hourlyRate?.toInt() ?? 0}/hr · ${pick!.distanceKm.toStringAsFixed(1)} km',
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold),
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: theme
+                                        .colorScheme.onPrimaryContainer),
                               ),
                             const SizedBox(height: 4),
                             Text(aiResponse,
-                                style: const TextStyle(fontSize: 15)),
+                                style: TextStyle(
+                                    fontSize: 15,
+                                    color: theme
+                                        .colorScheme.onPrimaryContainer)),
                             if (pick != null) ...[
                               const SizedBox(height: 8),
                               Text(l10n.tapToView,
-                                  style: const TextStyle(
-                                      color: Colors.deepPurple,
+                                  style: TextStyle(
+                                      color: theme.colorScheme.primary,
                                       fontWeight: FontWeight.w600)),
                             ],
                           ],
@@ -318,9 +422,12 @@ class _ExploreMapScreenState extends ConsumerState<ExploreMapScreen> {
     );
   }
 
+  // -------------------- Build --------------------
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
     final listingsAsync = ref.watch(activeListingsStreamProvider);
     final ratings = ref.watch(_ratingsProvider).value ?? {};
     final filter = ref.watch(listingFilterProvider);
@@ -339,84 +446,140 @@ class _ExploreMapScreenState extends ConsumerState<ExploreMapScreen> {
             myLocationButtonEnabled: false,
             zoomControlsEnabled: false,
             markers: markers,
-            onMapCreated: (controller) => _controller.complete(controller),
+            // Tapping the map dismisses the suggestion list.
+            onTap: (_) => _searchFocus.unfocus(),
+            onMapCreated: (controller) {
+              if (!_controller.isCompleted) _controller.complete(controller);
+            },
           ),
 
-          // Floating Search Bar + filter
+          // Floating search bar + suggestions + filter
           Positioned(
             top: 50,
             left: 16,
             right: 16,
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(30),
-                boxShadow: const [
-                  BoxShadow(
-                      color: Colors.black26,
-                      blurRadius: 10,
-                      offset: Offset(0, 2)),
-                ],
-              ),
-              child: TextField(
-                controller: _searchController,
-                onSubmitted: _searchPlace,
-                decoration: InputDecoration(
-                  hintText: l10n.whereToPark,
-                  prefixIcon:
-                      const Icon(Icons.search, color: Colors.deepPurple),
-                  suffixIcon: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      IconButton(
-                        icon: Icon(
-                          Icons.filter_list,
-                          color: filter.isActive
-                              ? Colors.deepPurple
-                              : Colors.grey.shade600,
-                        ),
-                        onPressed: _openFilters,
-                      ),
-                      if (filter.isActive)
-                        Positioned(
-                          right: 6,
-                          top: 6,
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: const BoxDecoration(
-                                color: Colors.deepPurple,
-                                shape: BoxShape.circle),
-                            child: Text('${filter.activeCount}',
-                                style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Material(
+                  elevation: 4,
+                  color: theme.colorScheme.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(30),
+                  child: TextField(
+                    controller: _searchController,
+                    focusNode: _searchFocus,
+                    onChanged: _onQueryChanged,
+                    textInputAction: TextInputAction.search,
+                    decoration: InputDecoration(
+                      hintText: l10n.whereToPark,
+                      prefixIcon: _searching
+                          ? const Padding(
+                              padding: EdgeInsets.all(14),
+                              child: SizedBox(
+                                  height: 18,
+                                  width: 18,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2)),
+                            )
+                          : Icon(Icons.search,
+                              color: theme.colorScheme.primary),
+                      suffixIcon: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (_searchController.text.isNotEmpty)
+                            IconButton(
+                              tooltip: l10n.close,
+                              icon: Icon(Icons.close,
+                                  size: 20, color: theme.hintColor),
+                              onPressed: _clearSearch,
+                            ),
+                          Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              IconButton(
+                                icon: Icon(
+                                  Icons.filter_list,
+                                  color: filter.isActive
+                                      ? theme.colorScheme.primary
+                                      : theme.hintColor,
+                                ),
+                                onPressed: _openFilters,
+                              ),
+                              if (filter.isActive)
+                                Positioned(
+                                  right: 6,
+                                  top: 6,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                        color: theme.colorScheme.primary,
+                                        shape: BoxShape.circle),
+                                    child: Text('${filter.activeCount}',
+                                        style: TextStyle(
+                                            color:
+                                                theme.colorScheme.onPrimary,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold)),
+                                  ),
+                                ),
+                            ],
                           ),
-                        ),
-                    ],
+                        ],
+                      ),
+                      border: InputBorder.none,
+                      contentPadding:
+                          const EdgeInsets.symmetric(vertical: 15),
+                    ),
                   ),
-                  border: InputBorder.none,
-                  contentPadding:
-                      const EdgeInsets.symmetric(vertical: 15),
                 ),
-              ),
+                if (_suggestions.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Material(
+                    elevation: 4,
+                    color: theme.colorScheme.surfaceContainerLow,
+                    borderRadius: BorderRadius.circular(16),
+                    clipBehavior: Clip.antiAlias,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        for (final s in _suggestions)
+                          ListTile(
+                            dense: true,
+                            leading: Icon(Icons.place_outlined,
+                                color: theme.colorScheme.primary),
+                            title: Text(s.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis),
+                            subtitle: s.subtitle.isEmpty
+                                ? null
+                                : Text(s.subtitle,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis),
+                            onTap: () => _choose(s),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
 
           // Result count / loading / empty hint
-          Positioned(
-            top: 108,
-            left: 16,
-            child: _StatusChip(
-              async: listingsAsync,
-              visibleCount: visible.length,
-              filterActive: filter.isActive,
-              loadingText: l10n.loadingSpots,
-              errorText: l10n.couldNotLoadSpots,
-              spotsText: l10n.spotsFound(visible.length),
-              filteredSuffix: l10n.filteredSuffix,
+          if (_suggestions.isEmpty)
+            Positioned(
+              top: 108,
+              left: 16,
+              child: _StatusChip(
+                async: listingsAsync,
+                visibleCount: visible.length,
+                filterActive: filter.isActive,
+                loadingText: l10n.loadingSpots,
+                errorText: l10n.couldNotLoadSpots,
+                spotsText: l10n.spotsFound(visible.length),
+                filteredSuffix: l10n.filteredSuffix,
+              ),
             ),
-          ),
 
           // Ask AI button
           Positioned(
@@ -424,9 +587,10 @@ class _ExploreMapScreenState extends ConsumerState<ExploreMapScreen> {
             right: 16,
             child: FloatingActionButton(
               heroTag: 'askAI',
-              backgroundColor: Colors.deepPurple,
-              child: const Icon(Icons.auto_awesome, color: Colors.white),
+              backgroundColor: theme.colorScheme.primary,
+              foregroundColor: theme.colorScheme.onPrimary,
               onPressed: () => _showAskAIBottomSheet(visible),
+              child: const Icon(Icons.auto_awesome),
             ),
           ),
 
@@ -436,9 +600,11 @@ class _ExploreMapScreenState extends ConsumerState<ExploreMapScreen> {
             right: 16,
             child: FloatingActionButton(
               heroTag: 'currentLocation',
-              backgroundColor: Colors.white,
+              tooltip: l10n.useMyLocation,
+              backgroundColor: theme.colorScheme.surfaceContainerLow,
+              foregroundColor: theme.colorScheme.primary,
               onPressed: _goToCurrentLocation,
-              child: const Icon(Icons.my_location, color: Colors.deepPurple),
+              child: const Icon(Icons.my_location),
             ),
           ),
         ],
@@ -467,6 +633,7 @@ class _StatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     String text;
     if (async.isLoading && !async.hasValue) {
       text = loadingText;
@@ -475,18 +642,16 @@ class _StatusChip extends StatelessWidget {
     } else {
       text = '$spotsText${filterActive ? filteredSuffix : ''}';
     }
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 6),
-        ],
+    return Material(
+      elevation: 2,
+      color: theme.colorScheme.surfaceContainerLow,
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        child: Text(text,
+            style:
+                const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
       ),
-      child: Text(text,
-          style: const TextStyle(
-              fontSize: 12, fontWeight: FontWeight.w600)),
     );
   }
 }

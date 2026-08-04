@@ -21,7 +21,7 @@ class RoleSelectionScreen extends ConsumerWidget {
     });
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
       appBar: AppBar(
         title: Text(l10n.chooseYourPath),
         centerTitle: true,
@@ -112,7 +112,7 @@ class _RoleCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    style: TextStyle(color: Colors.grey[700]),
+                    style: TextStyle(color: Theme.of(context).hintColor),
                   ),
                 ],
               ),

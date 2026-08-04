@@ -79,23 +79,23 @@ class WalletController extends AsyncNotifier<WalletState> {
     }
   }
 
-  Future<void> addFundsSuccess(double amount, String transactionId) async {
+  /// Credit a top-up. Only the gateway's `val_id` is sent — the server asks
+  /// SSLCommerz for the real amount, so the client cannot name its own.
+  /// Returns false when the payment could not be verified.
+  Future<bool> creditTopUp(String valId) async {
     state = const AsyncValue.loading();
-    
+
     try {
-      final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) return;
-
-      await _supabase.rpc('add_funds', params: {
-        'user_id_param': userId,
-        'amount_param': amount,
-        'txn_id_param': transactionId,
-      });
-
-      // Refresh state
+      final res = await _supabase.functions.invoke(
+        'wallet-topup',
+        body: {'val_id': valId},
+      );
+      final ok = (res.data as Map?)?['credited'] == true;
       state = AsyncValue.data(await _fetchWalletData());
+      return ok;
     } catch (e) {
       state = AsyncValue.error(e, StackTrace.current);
+      return false;
     }
   }
 }

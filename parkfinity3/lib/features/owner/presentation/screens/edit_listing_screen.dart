@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../data/models/listing_model.dart';
 import '../controllers/listings_controller.dart';
 import '../../../../core/data/repositories/storage_repository.dart';
+import '../../../../l10n/generated/app_localizations.dart';
 import '../widgets/listing_form_fields.dart';
 
 /// Edit an existing listing. Pre-fills the same fields as add, plus lets the
@@ -197,9 +198,10 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(title: const Text('Edit Listing'), elevation: 0),
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
+      appBar: AppBar(title: Text(l10n.editListing), elevation: 0),
       body: Form(
         key: _formKey,
         child: SingleChildScrollView(
@@ -208,8 +210,9 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // Photos (existing + new)
-              const Text('Photos',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Text(l10n.photos,
+                  style:
+                      const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
@@ -231,7 +234,7 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
                       width: 90,
                       height: 90,
                       decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey),
+                          border: Border.all(color: Theme.of(context).dividerColor),
                           borderRadius: BorderRadius.circular(8)),
                       child: const Icon(Icons.add_a_photo),
                     ),
@@ -276,24 +279,28 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
               ),
               const SizedBox(height: 24),
 
-              const Text('Pricing',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Text(l10n.pricing,
+                  style:
+                      const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
               Row(children: [
                 Expanded(
                     child: TextFormField(
                         controller: _hourlyRateController,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                            labelText: 'Hourly', border: OutlineInputBorder()),
-                        validator: (v) => v!.isEmpty ? 'Req' : null)),
+                        decoration: InputDecoration(
+                            labelText: l10n.hourly,
+                            border: const OutlineInputBorder()),
+                        validator: (v) =>
+                            v!.isEmpty ? l10n.required : null)),
                 const SizedBox(width: 8),
                 Expanded(
                     child: TextFormField(
                         controller: _dailyRateController,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                            labelText: 'Daily', border: OutlineInputBorder()))),
+                        decoration: InputDecoration(
+                            labelText: l10n.daily,
+                            border: const OutlineInputBorder()))),
               ]),
               const SizedBox(height: 12),
               Row(children: [
@@ -301,48 +308,50 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
                     child: TextFormField(
                         controller: _weeklyRateController,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                            labelText: 'Weekly',
-                            border: OutlineInputBorder()))),
+                        decoration: InputDecoration(
+                            labelText: l10n.weekly,
+                            border: const OutlineInputBorder()))),
                 const SizedBox(width: 8),
                 Expanded(
                     child: TextFormField(
                         controller: _monthlyRateController,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                            labelText: 'Monthly',
-                            border: OutlineInputBorder()))),
+                        decoration: InputDecoration(
+                            labelText: l10n.monthly,
+                            border: const OutlineInputBorder()))),
               ]),
               const SizedBox(height: 12),
               TextFormField(
                   controller: _yearlyRateController,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                      labelText: 'Yearly', border: OutlineInputBorder())),
+                  decoration: InputDecoration(
+                      labelText: l10n.yearly,
+                      border: const OutlineInputBorder())),
               const SizedBox(height: 24),
 
-              const Text('Amenities',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Text(l10n.amenities,
+                  style:
+                      const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               CheckboxListTile(
-                  title: const Text('CCTV'),
+                  title: Text(l10n.cctvCamera),
                   value: _hasCCTV,
                   onChanged: (v) => setState(() => _hasCCTV = v!),
                   controlAffinity: ListTileControlAffinity.leading,
                   contentPadding: EdgeInsets.zero),
               CheckboxListTile(
-                  title: const Text('Covered'),
+                  title: Text(l10n.coveredParking),
                   value: _isCovered,
                   onChanged: (v) => setState(() => _isCovered = v!),
                   controlAffinity: ListTileControlAffinity.leading,
                   contentPadding: EdgeInsets.zero),
               CheckboxListTile(
-                  title: const Text('Security Guard'),
+                  title: Text(l10n.securityGuard),
                   value: _hasGuard,
                   onChanged: (v) => setState(() => _hasGuard = v!),
                   controlAffinity: ListTileControlAffinity.leading,
                   contentPadding: EdgeInsets.zero),
               CheckboxListTile(
-                  title: const Text('EV Charging'),
+                  title: Text(l10n.evCharging),
                   value: _hasEvCharging,
                   onChanged: (v) => setState(() => _hasEvCharging = v!),
                   controlAffinity: ListTileControlAffinity.leading,
@@ -361,8 +370,9 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
               ),
               const SizedBox(height: 24),
 
-              const Text('Location',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Text(l10n.location,
+                  style:
+                      const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               SizedBox(
                 height: 220,
@@ -376,8 +386,8 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
                       onCameraMove: (p) => _selectedLocation = p.target,
                       zoomControlsEnabled: false,
                     ),
-                    const Icon(Icons.location_on,
-                        size: 44, color: Colors.deepPurple),
+                    Icon(Icons.location_on,
+                        size: 44, color: Theme.of(context).colorScheme.primary),
                   ]),
                 ),
               ),
@@ -387,12 +397,13 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
                 onPressed: _saving ? null : _save,
                 style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    backgroundColor: Colors.deepPurple,
-                    foregroundColor: Colors.white),
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary),
                 child: _saving
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text('Save Changes',
-                        style: TextStyle(fontSize: 18)),
+                    ? CircularProgressIndicator(
+                        color: Theme.of(context).colorScheme.onPrimary)
+                    : Text(l10n.saveChanges,
+                        style: const TextStyle(fontSize: 18)),
               ),
               const SizedBox(height: 24),
             ],
@@ -413,7 +424,7 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
           child: Container(
             decoration: const BoxDecoration(
                 color: Colors.black54, shape: BoxShape.circle),
-            child: const Icon(Icons.close, size: 18, color: Colors.white),
+            child: Icon(Icons.close, size: 18, color: Theme.of(context).colorScheme.surfaceContainerLow),
           ),
         ),
       ),

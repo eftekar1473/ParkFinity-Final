@@ -692,6 +692,58 @@ class AppLocalizationsEn extends AppLocalizations {
   String get closed => 'Closed';
 
   @override
+  String get filters => 'Filters';
+
+  @override
+  String get reset => 'Reset';
+
+  @override
+  String get anyValue => 'Any';
+
+  @override
+  String get distance => 'Distance';
+
+  @override
+  String get maxPricePerHour => 'Max price / hour';
+
+  @override
+  String get minimumRating => 'Minimum rating';
+
+  @override
+  String get onSiteSecurity => 'On-site security';
+
+  @override
+  String get showAll => 'Show all';
+
+  @override
+  String applyFilters(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Apply $count filters',
+      one: 'Apply 1 filter',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get availabilitySchedule => 'Availability Schedule';
+
+  @override
+  String get securePayment => 'Secure Payment';
+
+  @override
+  String get submitReview => 'Submit Review';
+
+  @override
+  String get addCommentOptional => 'Add a comment (optional)';
+
+  @override
+  String rateTarget(String target) {
+    return 'Rate $target';
+  }
+
+  @override
   String get noDescription => 'No description provided for this listing.';
 
   @override
@@ -866,4 +918,203 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noTransactions => 'No transactions yet.';
+
+  @override
+  String get phoneNumber => 'Phone number';
+
+  @override
+  String get phoneNumberHelper =>
+      'Riders and owners use this to call each other';
+
+  @override
+  String get editProfileTitle => 'Edit profile';
+
+  @override
+  String get profileUpdated => 'Profile updated';
+
+  @override
+  String get changePhoto => 'Change photo';
+
+  @override
+  String get verificationStatus => 'Verification status';
+
+  @override
+  String get verifiedStatus => 'Verified';
+
+  @override
+  String get pendingStatus => 'Pending';
+
+  @override
+  String get notSubmittedStatus => 'Not submitted';
+
+  @override
+  String get documentsSubmittedNote =>
+      'Your NID and licence were submitted at sign-up.';
+
+  @override
+  String get termsOfService => 'Terms of Service';
+
+  @override
+  String get nameRequired => 'Name is required';
+
+  @override
+  String get invalidPhone => 'Enter a valid Bangladeshi mobile number';
+
+  @override
+  String get bookingDetails => 'Booking details';
+
+  @override
+  String get bookingId => 'Booking ID';
+
+  @override
+  String get upcoming => 'Upcoming';
+
+  @override
+  String get activeTab => 'Active';
+
+  @override
+  String get completedStatus => 'Completed';
+
+  @override
+  String get startTime => 'Start time';
+
+  @override
+  String get endTime => 'End time';
+
+  @override
+  String get pickStartTime => 'Pick start time';
+
+  @override
+  String get pickEndTime => 'Pick end time';
+
+  @override
+  String get extendBooking => 'Extend booking';
+
+  @override
+  String get paymentBreakdown => 'Payment breakdown';
+
+  @override
+  String get baseAmount => 'Base amount';
+
+  @override
+  String get peakSurcharge => 'Peak hour surcharge';
+
+  @override
+  String get overstayCharge => 'Overstay charge';
+
+  @override
+  String get commission => 'Platform commission';
+
+  @override
+  String get totalPaid => 'Total paid';
+
+  @override
+  String get vehicle => 'Vehicle';
+
+  @override
+  String get callRider => 'Call rider';
+
+  @override
+  String get callOwner => 'Call owner';
+
+  @override
+  String get noPhoneOnFile => 'No phone number on file';
+
+  @override
+  String get couldNotOpenDialer => 'Could not open the dialer';
+
+  @override
+  String get qrCode => 'QR code';
+
+  @override
+  String get spotQrCode => 'Spot QR code';
+
+  @override
+  String get scanQr => 'Scan QR';
+
+  @override
+  String get scanToStart => 'Scan the spot QR to start parking';
+
+  @override
+  String get scanToEnd => 'Scan again to end parking';
+
+  @override
+  String get checkIn => 'Check in';
+
+  @override
+  String get checkOut => 'Check out';
+
+  @override
+  String get checkedIn => 'Checked in';
+
+  @override
+  String get checkedOut => 'Checked out';
+
+  @override
+  String get enterCodeManually => 'Enter the 6-character code instead';
+
+  @override
+  String get shortCode => 'Short code';
+
+  @override
+  String get saveQrImage => 'Save image';
+
+  @override
+  String get shareQr => 'Share / print';
+
+  @override
+  String get qrSaved => 'QR code saved';
+
+  @override
+  String get printAndMountQr =>
+      'Print this and mount it at your parking spot. Riders scan it to start and end parking.';
+
+  @override
+  String get cameraPermissionNeeded => 'Camera permission is needed to scan';
+
+  @override
+  String get earnings => 'Earnings';
+
+  @override
+  String get totalEarnings => 'Total earnings';
+
+  @override
+  String get withdraw => 'Withdraw';
+
+  @override
+  String get pendingWithdrawals => 'Pending withdrawals';
+
+  @override
+  String get ownerWalletNote =>
+      'Your booking earnings land here after the Parkfinity commission. Withdraw to your bank account.';
+
+  @override
+  String get riderWalletNote => 'Top up your wallet to book instantly.';
+
+  @override
+  String get photos => 'Photos';
+
+  @override
+  String get close => 'Close';
+
+  @override
+  String get retry => 'Retry';
+
+  @override
+  String get save => 'Save';
+
+  @override
+  String get loadingLabel => 'Loading…';
+
+  @override
+  String get somethingWentWrong => 'Something went wrong';
+
+  @override
+  String get searchHint => 'Search a place';
+
+  @override
+  String get yourLocation => 'Your location';
+
+  @override
+  String get noResults => 'No results';
 }

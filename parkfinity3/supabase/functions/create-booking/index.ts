@@ -88,12 +88,17 @@ serve(async (req) => {
       settings: cfg,
     });
 
-    // 4. Atomic slot lock (fails if none free -> race-safe)
-    const { data: booked, error: bookErr } = await supabase.rpc('book_slot', {
+    // 4. Interval reservation. Counts peak concurrency inside [start, end) instead
+    //    of a single "slots free right now" number, so a 2pm-3pm booking never
+    //    blocks a 5pm-6pm one on the same slot.
+    const { data: booked, error: bookErr } = await supabase.rpc('reserve_interval', {
       p_listing: listing_id, p_vtype: vehicle_type, p_qty: 1,
+      p_start: start.toISOString(), p_end: end.toISOString(),
     });
     if (bookErr) throw bookErr;
-    if (booked !== true) return json({ error: `No ${vehicle_type} slot available` }, 409);
+    if (booked !== true) {
+      return json({ error: `No ${vehicle_type} slot available for that time` }, 409);
+    }
     slotBooked = { listing: listing_id, vtype: vehicle_type, qty: 1 };
 
     // 5. Insert booking (manual mode stays Pending owner-approval; instant -> Confirmed)

@@ -30,11 +30,21 @@ class AuthRepository {
     return res;
   }
 
-  Future<AuthResponse> signUpWithEmailAndPassword(String email, String password, String fullName) async {
+  Future<AuthResponse> signUpWithEmailAndPassword(
+    String email,
+    String password,
+    String fullName, {
+    String? phoneNumber,
+  }) async {
     final res = await _auth.signUp(
       email: email,
       password: password,
-      data: {'full_name': fullName},
+      // handle_new_user() reads these to build the profiles row.
+      data: {
+        'full_name': fullName,
+        if (phoneNumber != null && phoneNumber.trim().isNotEmpty)
+          'phone_number': phoneNumber.trim(),
+      },
     );
     await PushService.instance.registerToken();
     return res;
@@ -50,10 +60,19 @@ class AuthRepository {
     final webClientId = dotenv.env['GOOGLE_WEB_CLIENT_ID'];
     final iosClientId = dotenv.env['GOOGLE_IOS_CLIENT_ID'];
 
+    if (webClientId == null || webClientId.trim().isEmpty) {
+      throw const AuthException(
+          'Google sign-in is not configured (GOOGLE_WEB_CLIENT_ID missing).');
+    }
+
     final googleSignIn = GoogleSignIn(
       clientId: iosClientId,
       serverClientId: webClientId,
     );
+    // Force the account chooser instead of silently reusing a stale account,
+    // which is what made the picker appear and then do nothing.
+    await googleSignIn.signOut();
+
     final googleUser = await googleSignIn.signIn();
     if (googleUser == null) {
       throw const AuthException('Google sign-in was cancelled.');
@@ -62,7 +81,9 @@ class AuthRepository {
     final idToken = googleAuth.idToken;
     final accessToken = googleAuth.accessToken;
     if (idToken == null) {
-      throw const AuthException('No ID token from Google.');
+      throw const AuthException(
+          'Google returned no ID token. Check that GOOGLE_WEB_CLIENT_ID is the '
+          'Web OAuth client and that this build\'s SHA-1 is registered.');
     }
     final res = await _auth.signInWithIdToken(
       provider: OAuthProvider.google,

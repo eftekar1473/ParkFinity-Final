@@ -83,7 +83,7 @@ class _WithdrawalScreenState extends ConsumerState<WithdrawalScreen> {
       case 'Completed':
         return Colors.green;
       case 'Rejected':
-        return Colors.red;
+        return Theme.of(context).colorScheme.error;
       case 'Approved':
         return Colors.blue;
       default:
@@ -94,6 +94,7 @@ class _WithdrawalScreenState extends ConsumerState<WithdrawalScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(title: Text(l10n.withdrawEarningsTitle)),
       body: _loading
@@ -104,18 +105,20 @@ class _WithdrawalScreenState extends ConsumerState<WithdrawalScreen> {
                 padding: const EdgeInsets.all(20),
                 children: [
                   Card(
-                    color: Colors.deepPurple,
+                    color: theme.colorScheme.primary,
                     child: Padding(
                       padding: const EdgeInsets.all(20),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(l10n.availableBalance,
-                              style: const TextStyle(color: Colors.white70)),
+                              style: TextStyle(
+                                  color: theme.colorScheme.onPrimary
+                                      .withValues(alpha: 0.75))),
                           const SizedBox(height: 8),
                           Text('৳ ${_balance.toStringAsFixed(2)}',
-                              style: const TextStyle(
-                                  color: Colors.white,
+                              style: TextStyle(
+                                  color: theme.colorScheme.onPrimary,
                                   fontSize: 32,
                                   fontWeight: FontWeight.bold)),
                         ],
@@ -154,15 +157,17 @@ class _WithdrawalScreenState extends ConsumerState<WithdrawalScreen> {
                               (v == null || v.trim().isEmpty) ? l10n.required : null,
                         ),
                         const SizedBox(height: 16),
-                        ElevatedButton(
+                        FilledButton(
                           onPressed: _submitting ? null : _submit,
-                          style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              backgroundColor: Colors.deepPurple,
-                              foregroundColor: Colors.white),
+                          style: FilledButton.styleFrom(
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 16)),
                           child: _submitting
-                              ? const CircularProgressIndicator(
-                                  color: Colors.white)
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2))
                               : Text(l10n.requestWithdrawal),
                         ),
                       ],
@@ -177,7 +182,7 @@ class _WithdrawalScreenState extends ConsumerState<WithdrawalScreen> {
                     Padding(
                       padding: const EdgeInsets.all(16),
                       child: Text(l10n.noWithdrawals,
-                          style: const TextStyle(color: Colors.grey)),
+                          style: TextStyle(color: theme.hintColor)),
                     )
                   else
                     ..._history.map((w) => ListTile(

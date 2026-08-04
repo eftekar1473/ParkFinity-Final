@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../l10n/generated/app_localizations.dart';
 import '../../../rider/data/repositories/reviews_repository.dart';
 
 /// Star-rating + comment bottom sheet used by both rider and owner to review
@@ -70,7 +71,7 @@ class _ReviewSheetState extends ConsumerState<ReviewSheet> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(e.toString().replaceFirst('Exception: ', '')),
-          backgroundColor: Colors.red,
+          backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
     }
@@ -83,9 +84,10 @@ class _ReviewSheetState extends ConsumerState<ReviewSheet> {
       padding: EdgeInsets.only(bottom: bottomInset),
       child: Container(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerLow,
+          borderRadius:
+              const BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -96,13 +98,13 @@ class _ReviewSheetState extends ConsumerState<ReviewSheet> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
+                  color: Theme.of(context).dividerColor,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
             ),
             const SizedBox(height: 16),
-            Text('Rate ${widget.targetLabel}',
+            Text(AppLocalizations.of(context).rateTarget(widget.targetLabel),
                 style: const TextStyle(
                     fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
@@ -128,9 +130,9 @@ class _ReviewSheetState extends ConsumerState<ReviewSheet> {
               enabled: !_submitting,
               maxLines: 3,
               decoration: InputDecoration(
-                hintText: 'Add a comment (optional)',
+                hintText: AppLocalizations.of(context).addCommentOptional,
                 filled: true,
-                fillColor: Colors.grey.shade100,
+                fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
@@ -143,19 +145,20 @@ class _ReviewSheetState extends ConsumerState<ReviewSheet> {
               child: ElevatedButton(
                 onPressed: (_rating < 1 || _submitting) ? null : _submit,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.deepPurple,
-                  foregroundColor: Colors.white,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
                 ),
                 child: _submitting
-                    ? const SizedBox(
+                    ? SizedBox(
                         height: 20,
                         width: 20,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white))
-                    : const Text('Submit Review'),
+                            strokeWidth: 2,
+                            color: Theme.of(context).colorScheme.onPrimary))
+                    : Text(AppLocalizations.of(context).submitReview),
               ),
             ),
           ],

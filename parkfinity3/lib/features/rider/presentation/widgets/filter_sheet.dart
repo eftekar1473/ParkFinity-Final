@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../l10n/generated/app_localizations.dart';
 import '../../data/models/listing_filter.dart';
 import '../../../owner/presentation/widgets/listing_form_fields.dart';
 
@@ -11,7 +12,7 @@ Future<ListingFilter?> showFilterSheet(
   return showModalBottomSheet<ListingFilter>(
     context: context,
     isScrollControlled: true,
-    backgroundColor: Colors.white,
+    backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
@@ -38,6 +39,7 @@ class _FilterSheetState extends State<_FilterSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: EdgeInsets.only(
         left: 20,
@@ -52,61 +54,63 @@ class _FilterSheetState extends State<_FilterSheet> {
           children: [
             Row(
               children: [
-                const Text('Filters',
-                    style: TextStyle(
+                Text(l10n.filters,
+                    style: const TextStyle(
                         fontSize: 20, fontWeight: FontWeight.bold)),
                 const Spacer(),
                 TextButton(
                   onPressed: () => setState(() => _f = ListingFilter.none),
-                  child: const Text('Reset'),
+                  child: Text(l10n.reset),
                 ),
               ],
             ),
             const SizedBox(height: 8),
 
             // Distance
-            _label('Distance',
+            _label(l10n.distance,
                 _f.maxDistanceKm == null
-                    ? 'Any'
+                    ? l10n.anyValue
                     : '${_f.maxDistanceKm!.toStringAsFixed(0)} km'),
             Slider(
               value: (_f.maxDistanceKm ?? 25).clamp(1, 25),
               min: 1,
               max: 25,
               divisions: 24,
-              activeColor: Colors.deepPurple,
+              activeColor: Theme.of(context).colorScheme.primary,
               label: '${(_f.maxDistanceKm ?? 25).toStringAsFixed(0)} km',
               onChanged: (v) => setState(() =>
                   _f = _f.copyWith(maxDistanceKm: v >= 25 ? null : v)),
             ),
 
             // Price
-            _label('Max price / hour',
+            _label(l10n.maxPricePerHour,
                 _f.maxHourlyRate == null
-                    ? 'Any'
+                    ? l10n.anyValue
                     : '৳${_f.maxHourlyRate!.toStringAsFixed(0)}'),
             Slider(
               value: (_f.maxHourlyRate ?? 500).clamp(20, 500),
               min: 20,
               max: 500,
               divisions: 48,
-              activeColor: Colors.deepPurple,
+              activeColor: Theme.of(context).colorScheme.primary,
               label: '৳${(_f.maxHourlyRate ?? 500).toStringAsFixed(0)}',
               onChanged: (v) => setState(() =>
                   _f = _f.copyWith(maxHourlyRate: v >= 500 ? null : v)),
             ),
 
             // Rating
-            _label('Minimum rating',
-                _f.minRating == 0 ? 'Any' : '${_f.minRating.toStringAsFixed(0)}★+'),
+            _label(l10n.minimumRating,
+                _f.minRating == 0
+                    ? l10n.anyValue
+                    : '${_f.minRating.toStringAsFixed(0)}★+'),
             Wrap(
               spacing: 8,
               children: [0, 3, 4, 5].map((r) {
                 final selected = _f.minRating == r;
                 return ChoiceChip(
-                  label: Text(r == 0 ? 'Any' : '$r★+'),
+                  label: Text(r == 0 ? l10n.anyValue : '$r★+'),
                   selected: selected,
-                  selectedColor: Colors.deepPurple.shade100,
+                  selectedColor: Theme.of(context).colorScheme.primaryContainer,
                   onSelected: (_) =>
                       setState(() => _f = _f.copyWith(minRating: r.toDouble())),
                 );
@@ -115,24 +119,24 @@ class _FilterSheetState extends State<_FilterSheet> {
             const SizedBox(height: 16),
 
             // Vehicle type
-            const Text('Vehicle type',
-                style: TextStyle(fontWeight: FontWeight.w600)),
+            Text(l10n.vehicleType,
+                style: const TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
               runSpacing: 4,
               children: [
                 ChoiceChip(
-                  label: const Text('Any'),
+                  label: Text(l10n.anyValue),
                   selected: _f.vehicleType == null,
-                  selectedColor: Colors.deepPurple.shade100,
+                  selectedColor: Theme.of(context).colorScheme.primaryContainer,
                   onSelected: (_) => setState(
                       () => _f = _f.copyWith(clearVehicleType: true)),
                 ),
                 ...kVehicleTypes.map((t) => ChoiceChip(
                       label: Text(t),
                       selected: _f.vehicleType == t,
-                      selectedColor: Colors.deepPurple.shade100,
+                      selectedColor: Theme.of(context).colorScheme.primaryContainer,
                       onSelected: (_) =>
                           setState(() => _f = _f.copyWith(vehicleType: t)),
                     )),
@@ -141,15 +145,15 @@ class _FilterSheetState extends State<_FilterSheet> {
             const SizedBox(height: 16),
 
             // Amenities
-            const Text('Amenities',
-                style: TextStyle(fontWeight: FontWeight.w600)),
-            _switch('Covered', _f.requireCovered,
+            Text(l10n.amenities,
+                style: const TextStyle(fontWeight: FontWeight.w600)),
+            _switch(l10n.coveredParking, _f.requireCovered,
                 (v) => setState(() => _f = _f.copyWith(requireCovered: v))),
-            _switch('On-site security', _f.requireSecurity,
+            _switch(l10n.onSiteSecurity, _f.requireSecurity,
                 (v) => setState(() => _f = _f.copyWith(requireSecurity: v))),
-            _switch('CCTV', _f.requireCctv,
+            _switch(l10n.cctvCamera, _f.requireCctv,
                 (v) => setState(() => _f = _f.copyWith(requireCctv: v))),
-            _switch('EV charging', _f.requireEvCharging,
+            _switch(l10n.evCharging, _f.requireEvCharging,
                 (v) => setState(() => _f = _f.copyWith(requireEvCharging: v))),
 
             const SizedBox(height: 20),
@@ -158,15 +162,15 @@ class _FilterSheetState extends State<_FilterSheet> {
               child: ElevatedButton(
                 onPressed: () => Navigator.pop(context, _f),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.deepPurple,
-                  foregroundColor: Colors.white,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
                 ),
                 child: Text(_f.isActive
-                    ? 'Apply ${_f.activeCount} filter${_f.activeCount == 1 ? '' : 's'}'
-                    : 'Show all'),
+                    ? l10n.applyFilters(_f.activeCount)
+                    : l10n.showAll),
               ),
             ),
           ],
@@ -181,7 +185,7 @@ class _FilterSheetState extends State<_FilterSheet> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-            Text(value, style: const TextStyle(color: Colors.deepPurple)),
+            Text(value, style: TextStyle(color: Theme.of(context).colorScheme.primary)),
           ],
         ),
       );
@@ -190,7 +194,7 @@ class _FilterSheetState extends State<_FilterSheet> {
       SwitchListTile(
         contentPadding: EdgeInsets.zero,
         dense: true,
-        activeThumbColor: Colors.deepPurple,
+        activeThumbColor: Theme.of(context).colorScheme.primary,
         title: Text(label),
         value: value,
         onChanged: onChanged,

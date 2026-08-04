@@ -43,7 +43,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
+              SnackBar(content: Text(errorMessage), backgroundColor: Theme.of(context).colorScheme.error),
             );
           }
         },
@@ -51,7 +51,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
@@ -59,7 +59,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Icon(Icons.local_parking, size: 80, color: Colors.deepPurple),
+              Icon(Icons.local_parking, size: 80, color: Theme.of(context).colorScheme.primary),
               const SizedBox(height: 24),
               Text(
                 l10n.loginTitle,
@@ -70,7 +70,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               Text(
                 l10n.loginSubtitle,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.grey),
+                style: TextStyle(color: Theme.of(context).hintColor),
               ),
               const SizedBox(height: 48),
               TextField(
@@ -96,11 +96,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 onPressed: authState.isLoading ? null : _login,
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  backgroundColor: Colors.deepPurple,
-                  foregroundColor: Colors.white,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 ),
                 child: authState.isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
+                    ? CircularProgressIndicator(color: Theme.of(context).colorScheme.surfaceContainerLow)
                     : Text(l10n.login, style: const TextStyle(fontSize: 18)),
               ),
               const SizedBox(height: 16),
@@ -108,7 +108,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 const Expanded(child: Divider()),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: Text(l10n.or, style: TextStyle(color: Colors.grey[600])),
+                  child: Text(l10n.or, style: TextStyle(color: Theme.of(context).hintColor)),
                 ),
                 const Expanded(child: Divider()),
               ]),
@@ -119,11 +119,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     : () => ref.read(authControllerProvider.notifier).signInWithGoogle(),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  side: const BorderSide(color: Colors.grey),
+                  side: BorderSide(color: Theme.of(context).dividerColor),
                 ),
-                icon: const Icon(Icons.g_mobiledata, size: 28, color: Colors.red),
+                icon: Icon(Icons.g_mobiledata, size: 28, color: Theme.of(context).colorScheme.error),
                 label: Text(l10n.continueWithGoogle,
-                    style: const TextStyle(fontSize: 16, color: Colors.black87)),
+                    style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.onSurface)),
               ),
               const SizedBox(height: 16),
               TextButton(

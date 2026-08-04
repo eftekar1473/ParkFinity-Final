@@ -30,6 +30,16 @@ class ListingModel {
   final bool isActive;
   final List<String> photos;
   final String? videoUrl;
+
+  /// Server-generated QR identity for the printed poster. Read-only: never sent
+  /// back in toJson so an update can't overwrite or rotate it by accident.
+  final String? qrToken;
+  final String? qrShortCode;
+
+  /// Number riders can call about this spot. Falls back to the owner's profile
+  /// phone when null.
+  final String? contactPhone;
+
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -58,6 +68,9 @@ class ListingModel {
     this.isActive = true,
     this.photos = const [],
     this.videoUrl,
+    this.qrToken,
+    this.qrShortCode,
+    this.contactPhone,
     this.createdAt,
     this.updatedAt,
   });
@@ -112,6 +125,9 @@ class ListingModel {
       isActive: json['is_active'] as bool? ?? true,
       photos: (json['photos'] as List?)?.map((e) => e.toString()).toList() ?? [],
       videoUrl: json['video_url'] as String?,
+      qrToken: json['qr_token'] as String?,
+      qrShortCode: json['qr_short_code'] as String?,
+      contactPhone: json['contact_phone'] as String?,
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
           : null,
@@ -152,6 +168,7 @@ class ListingModel {
       'is_active': isActive,
       'photos': photos,
       if (videoUrl != null) 'video_url': videoUrl,
+      if (contactPhone != null) 'contact_phone': contactPhone,
     };
   }
 
@@ -178,6 +195,7 @@ class ListingModel {
     bool? isActive,
     List<String>? photos,
     String? videoUrl,
+    String? contactPhone,
   }) {
     return ListingModel(
       id: id,
@@ -204,6 +222,10 @@ class ListingModel {
       isActive: isActive ?? this.isActive,
       photos: photos ?? this.photos,
       videoUrl: videoUrl ?? this.videoUrl,
+      // QR identity is server-owned; carry it through untouched.
+      qrToken: qrToken,
+      qrShortCode: qrShortCode,
+      contactPhone: contactPhone ?? this.contactPhone,
       createdAt: createdAt,
       updatedAt: updatedAt,
     );

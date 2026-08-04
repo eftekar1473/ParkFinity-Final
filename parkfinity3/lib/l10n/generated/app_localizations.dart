@@ -1406,6 +1406,90 @@ abstract class AppLocalizations {
   /// **'Closed'**
   String get closed;
 
+  /// No description provided for @filters.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get filters;
+
+  /// No description provided for @reset.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get reset;
+
+  /// No description provided for @anyValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Any'**
+  String get anyValue;
+
+  /// No description provided for @distance.
+  ///
+  /// In en, this message translates to:
+  /// **'Distance'**
+  String get distance;
+
+  /// No description provided for @maxPricePerHour.
+  ///
+  /// In en, this message translates to:
+  /// **'Max price / hour'**
+  String get maxPricePerHour;
+
+  /// No description provided for @minimumRating.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimum rating'**
+  String get minimumRating;
+
+  /// No description provided for @onSiteSecurity.
+  ///
+  /// In en, this message translates to:
+  /// **'On-site security'**
+  String get onSiteSecurity;
+
+  /// No description provided for @showAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Show all'**
+  String get showAll;
+
+  /// No description provided for @applyFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Apply 1 filter} other{Apply {count} filters}}'**
+  String applyFilters(int count);
+
+  /// No description provided for @availabilitySchedule.
+  ///
+  /// In en, this message translates to:
+  /// **'Availability Schedule'**
+  String get availabilitySchedule;
+
+  /// No description provided for @securePayment.
+  ///
+  /// In en, this message translates to:
+  /// **'Secure Payment'**
+  String get securePayment;
+
+  /// No description provided for @submitReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit Review'**
+  String get submitReview;
+
+  /// No description provided for @addCommentOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a comment (optional)'**
+  String get addCommentOptional;
+
+  /// No description provided for @rateTarget.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate {target}'**
+  String rateTarget(String target);
+
   /// No description provided for @noDescription.
   ///
   /// In en, this message translates to:
@@ -1693,6 +1777,396 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No transactions yet.'**
   String get noTransactions;
+
+  /// No description provided for @phoneNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone number'**
+  String get phoneNumber;
+
+  /// No description provided for @phoneNumberHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Riders and owners use this to call each other'**
+  String get phoneNumberHelper;
+
+  /// No description provided for @editProfileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit profile'**
+  String get editProfileTitle;
+
+  /// No description provided for @profileUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile updated'**
+  String get profileUpdated;
+
+  /// No description provided for @changePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Change photo'**
+  String get changePhoto;
+
+  /// No description provided for @verificationStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification status'**
+  String get verificationStatus;
+
+  /// No description provided for @verifiedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified'**
+  String get verifiedStatus;
+
+  /// No description provided for @pendingStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get pendingStatus;
+
+  /// No description provided for @notSubmittedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Not submitted'**
+  String get notSubmittedStatus;
+
+  /// No description provided for @documentsSubmittedNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Your NID and licence were submitted at sign-up.'**
+  String get documentsSubmittedNote;
+
+  /// No description provided for @termsOfService.
+  ///
+  /// In en, this message translates to:
+  /// **'Terms of Service'**
+  String get termsOfService;
+
+  /// No description provided for @nameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Name is required'**
+  String get nameRequired;
+
+  /// No description provided for @invalidPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid Bangladeshi mobile number'**
+  String get invalidPhone;
+
+  /// No description provided for @bookingDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Booking details'**
+  String get bookingDetails;
+
+  /// No description provided for @bookingId.
+  ///
+  /// In en, this message translates to:
+  /// **'Booking ID'**
+  String get bookingId;
+
+  /// No description provided for @upcoming.
+  ///
+  /// In en, this message translates to:
+  /// **'Upcoming'**
+  String get upcoming;
+
+  /// No description provided for @activeTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get activeTab;
+
+  /// No description provided for @completedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get completedStatus;
+
+  /// No description provided for @startTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Start time'**
+  String get startTime;
+
+  /// No description provided for @endTime.
+  ///
+  /// In en, this message translates to:
+  /// **'End time'**
+  String get endTime;
+
+  /// No description provided for @pickStartTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick start time'**
+  String get pickStartTime;
+
+  /// No description provided for @pickEndTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick end time'**
+  String get pickEndTime;
+
+  /// No description provided for @extendBooking.
+  ///
+  /// In en, this message translates to:
+  /// **'Extend booking'**
+  String get extendBooking;
+
+  /// No description provided for @paymentBreakdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment breakdown'**
+  String get paymentBreakdown;
+
+  /// No description provided for @baseAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Base amount'**
+  String get baseAmount;
+
+  /// No description provided for @peakSurcharge.
+  ///
+  /// In en, this message translates to:
+  /// **'Peak hour surcharge'**
+  String get peakSurcharge;
+
+  /// No description provided for @overstayCharge.
+  ///
+  /// In en, this message translates to:
+  /// **'Overstay charge'**
+  String get overstayCharge;
+
+  /// No description provided for @commission.
+  ///
+  /// In en, this message translates to:
+  /// **'Platform commission'**
+  String get commission;
+
+  /// No description provided for @totalPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Total paid'**
+  String get totalPaid;
+
+  /// No description provided for @vehicle.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle'**
+  String get vehicle;
+
+  /// No description provided for @callRider.
+  ///
+  /// In en, this message translates to:
+  /// **'Call rider'**
+  String get callRider;
+
+  /// No description provided for @callOwner.
+  ///
+  /// In en, this message translates to:
+  /// **'Call owner'**
+  String get callOwner;
+
+  /// No description provided for @noPhoneOnFile.
+  ///
+  /// In en, this message translates to:
+  /// **'No phone number on file'**
+  String get noPhoneOnFile;
+
+  /// No description provided for @couldNotOpenDialer.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open the dialer'**
+  String get couldNotOpenDialer;
+
+  /// No description provided for @qrCode.
+  ///
+  /// In en, this message translates to:
+  /// **'QR code'**
+  String get qrCode;
+
+  /// No description provided for @spotQrCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Spot QR code'**
+  String get spotQrCode;
+
+  /// No description provided for @scanQr.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan QR'**
+  String get scanQr;
+
+  /// No description provided for @scanToStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan the spot QR to start parking'**
+  String get scanToStart;
+
+  /// No description provided for @scanToEnd.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan again to end parking'**
+  String get scanToEnd;
+
+  /// No description provided for @checkIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Check in'**
+  String get checkIn;
+
+  /// No description provided for @checkOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Check out'**
+  String get checkOut;
+
+  /// No description provided for @checkedIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Checked in'**
+  String get checkedIn;
+
+  /// No description provided for @checkedOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Checked out'**
+  String get checkedOut;
+
+  /// No description provided for @enterCodeManually.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the 6-character code instead'**
+  String get enterCodeManually;
+
+  /// No description provided for @shortCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Short code'**
+  String get shortCode;
+
+  /// No description provided for @saveQrImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Save image'**
+  String get saveQrImage;
+
+  /// No description provided for @shareQr.
+  ///
+  /// In en, this message translates to:
+  /// **'Share / print'**
+  String get shareQr;
+
+  /// No description provided for @qrSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'QR code saved'**
+  String get qrSaved;
+
+  /// No description provided for @printAndMountQr.
+  ///
+  /// In en, this message translates to:
+  /// **'Print this and mount it at your parking spot. Riders scan it to start and end parking.'**
+  String get printAndMountQr;
+
+  /// No description provided for @cameraPermissionNeeded.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera permission is needed to scan'**
+  String get cameraPermissionNeeded;
+
+  /// No description provided for @earnings.
+  ///
+  /// In en, this message translates to:
+  /// **'Earnings'**
+  String get earnings;
+
+  /// No description provided for @totalEarnings.
+  ///
+  /// In en, this message translates to:
+  /// **'Total earnings'**
+  String get totalEarnings;
+
+  /// No description provided for @withdraw.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdraw'**
+  String get withdraw;
+
+  /// No description provided for @pendingWithdrawals.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending withdrawals'**
+  String get pendingWithdrawals;
+
+  /// No description provided for @ownerWalletNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Your booking earnings land here after the Parkfinity commission. Withdraw to your bank account.'**
+  String get ownerWalletNote;
+
+  /// No description provided for @riderWalletNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Top up your wallet to book instantly.'**
+  String get riderWalletNote;
+
+  /// No description provided for @photos.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos'**
+  String get photos;
+
+  /// No description provided for @close.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get close;
+
+  /// No description provided for @retry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retry;
+
+  /// No description provided for @save.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get save;
+
+  /// No description provided for @loadingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading…'**
+  String get loadingLabel;
+
+  /// No description provided for @somethingWentWrong.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong'**
+  String get somethingWentWrong;
+
+  /// No description provided for @searchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search a place'**
+  String get searchHint;
+
+  /// No description provided for @yourLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Your location'**
+  String get yourLocation;
+
+  /// No description provided for @noResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No results'**
+  String get noResults;
 }
 
 class _AppLocalizationsDelegate

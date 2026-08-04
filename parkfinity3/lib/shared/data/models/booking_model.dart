@@ -18,6 +18,12 @@ class BookingModel {
   final int slotQty;
   final bool isRefunded;
   final String status;
+
+  /// QR session stamps. Null until the rider scans the spot poster.
+  final DateTime? checkedInAt;
+  final DateTime? checkedOutAt;
+  final bool noShow;
+
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -42,6 +48,9 @@ class BookingModel {
     this.slotQty = 1,
     this.isRefunded = false,
     this.status = 'Pending',
+    this.checkedInAt,
+    this.checkedOutAt,
+    this.noShow = false,
     this.createdAt,
     this.updatedAt,
     this.listing,
@@ -66,6 +75,13 @@ class BookingModel {
       slotQty: (json['slot_qty'] as num?)?.toInt() ?? 1,
       isRefunded: json['is_refunded'] as bool? ?? false,
       status: json['status'] as String? ?? 'Pending',
+      checkedInAt: json['checked_in_at'] != null
+          ? DateTime.parse(json['checked_in_at'])
+          : null,
+      checkedOutAt: json['checked_out_at'] != null
+          ? DateTime.parse(json['checked_out_at'])
+          : null,
+      noShow: json['no_show'] as bool? ?? false,
       createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
       updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
       listing: json['listings'] != null ? ListingModel.fromJson(json['listings']) : null,

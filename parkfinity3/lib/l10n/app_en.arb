@@ -1,7 +1,6 @@
 {
   "@@locale": "en",
   "appTitle": "ParkFinity",
-
   "settings": "Settings",
   "language": "Language",
   "theme": "Theme",
@@ -10,7 +9,6 @@
   "themeDark": "Dark",
   "english": "English",
   "bangla": "বাংলা",
-
   "loginTitle": "Welcome to ParkFinity",
   "loginSubtitle": "Login to manage or find parking spots.",
   "tooManyLoginAttempts": "Too many login attempts. Please wait a moment and try again.",
@@ -26,14 +24,12 @@
   "fullName": "Full Name",
   "signUp": "Sign Up",
   "haveAccountLogin": "Already have an account? Login",
-
   "chooseYourPath": "Choose Your Path",
   "howWillYouUse": "How will you use ParkFinity?",
   "findParking": "Find Parking",
   "findParkingSub": "I want to rent parking spots.",
   "hostParking": "Host Parking",
   "hostParkingSub": "I want to earn money hosting spots.",
-
   "verifyIdentity": "Verify Your Identity",
   "kycOwnerIntro": "To host a parking space, upload your NID (both sides) and a property document. We store these securely for fraud protection only — we do not share them.",
   "kycRiderIntro": "To book parking, upload your NID (both sides) and your driving license. We store these securely for fraud protection only — we do not share them.",
@@ -50,7 +46,6 @@
   "checkingDocument": "Checking document…",
   "captured": "Captured ✓",
   "tapToCapture": "Tap to capture",
-
   "myProfile": "My Profile",
   "accountSettings": "Account Settings",
   "editProfile": "Edit Profile",
@@ -62,7 +57,6 @@
   "helpCenter": "Help Center",
   "privacyPolicy": "Privacy Policy",
   "logOut": "Log Out",
-
   "dashboard": "Dashboard",
   "todaysEarnings": "Today's Earnings",
   "activeParkings": "Active Parkings",
@@ -73,14 +67,25 @@
   "quickActions": "Quick Actions",
   "paused": "Paused",
   "failedUpdateStatus": "Failed to update status: {error}",
-  "@failedUpdateStatus": { "placeholders": { "error": { "type": "String" } } },
+  "@failedUpdateStatus": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "failedToLoad": "Failed to load: {error}",
-  "@failedToLoad": { "placeholders": { "error": { "type": "String" } } },
+  "@failedToLoad": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "withdrawalRequested": "Withdrawal requested. Awaiting admin approval.",
   "amountBdt": "Amount (৳)",
   "enterValidAmount": "Enter a valid amount",
   "exceedsBalance": "Exceeds balance",
-
   "myListings": "My Listings",
   "noListings": "No listings found. Tap + to add one.",
   "addParkingSpot": "Add Parking Spot",
@@ -116,7 +121,6 @@
   "address": "Address",
   "location": "Location",
   "pricing": "Pricing",
-
   "withdrawEarningsTitle": "Withdraw Earnings",
   "availableBalance": "Available Balance",
   "amount": "Amount",
@@ -125,13 +129,11 @@
   "requestWithdrawal": "Request Withdrawal",
   "history": "History",
   "noWithdrawals": "No withdrawal requests yet.",
-
   "bookings": "Bookings",
   "myBookings": "My Bookings",
   "noBookings": "No bookings found.",
   "rateThisRider": "Rate this rider",
   "rateThisSpot": "Rate this spot",
-
   "checkout": "Checkout",
   "selectDuration": "Select Duration",
   "selectVehicle": "Select Vehicle",
@@ -146,7 +148,6 @@
   "noSlotsAvailable": "No slots available right now.",
   "bookingConfirmed": "Booking confirmed!",
   "pay": "Pay",
-
   "activeSession": "Active Session",
   "noActiveBookings": "No Active Bookings",
   "extendParking": "Extend Parking",
@@ -161,7 +162,6 @@
   "keep": "Keep",
   "cancelIt": "Cancel it",
   "couldNotOpenMaps": "Could not open maps.",
-
   "smartRecommendations": "Smart Recommendations",
   "couldNotLoadRecommendations": "Could not load recommendations.",
   "noMatchingSpots": "No matching spots found. Try adjusting filters.",
@@ -174,7 +174,6 @@
   "price": "Price",
   "bookNow": "Book Now",
   "full": "Full",
-
   "askParkfinityAi": "Ask ParkFinity AI ✨",
   "yourPreference": "Your preference...",
   "askAi": "Ask AI",
@@ -182,7 +181,6 @@
   "seeAllRecommendations": "See all smart recommendations",
   "whereToPark": "Where do you want to park?",
   "locationNotFound": "Location not found. Please try another search.",
-
   "addNewVehicle": "Add New Vehicle",
   "vehicleType": "Vehicle Type",
   "brand": "Brand (e.g., Toyota)",
@@ -198,15 +196,19 @@
   "noVehicles": "No vehicles found. Add one below.",
   "required": "Required",
   "deleteVehicleConfirm": "Are you sure you want to delete {name}?",
-  "@deleteVehicleConfirm": { "placeholders": { "name": { "type": "String" } } },
-
+  "@deleteVehicleConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "notifications": "Notifications",
   "wallet": "Wallet",
   "explore": "Explore",
   "garage": "Garage",
   "profile": "Profile",
   "error": "Error",
-
   "upcomingActive": "Upcoming & Active",
   "past": "Past",
   "unknownAddress": "Unknown Address",
@@ -218,7 +220,13 @@
   "thisParkingSpot": "this parking spot",
   "thisRider": "this rider",
   "riderLabel": "Rider {id}",
-  "@riderLabel": { "placeholders": { "id": { "type": "String" } } },
+  "@riderLabel": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
   "notLoggedIn": "Not logged in",
   "markAllAsRead": "Mark all as read",
   "noNotificationsYet": "No notifications yet.",
@@ -226,47 +234,151 @@
   "loadingSpots": "Loading spots…",
   "couldNotLoadSpots": "Could not load spots",
   "spotsFound": "{count} spots",
-  "@spotsFound": { "placeholders": { "count": { "type": "int" } } },
+  "@spotsFound": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "filteredSuffix": " (filtered)",
   "aiPromptHint": "Tell us what kind of parking you need (e.g. \"Cheapest covered spot near Gulshan\")",
   "aiRecommend": "I recommend {title}.",
-  "@aiRecommend": { "placeholders": { "title": { "type": "String" } } },
+  "@aiRecommend": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "aiNoMatch": "Sorry, I could not find a good match.",
   "fullNoSlots": "Full — no free slots",
   "freeSpots": "free",
   "newBadge": "New",
   "hostedBy": "Hosted by {name}",
-  "@hostedBy": { "placeholders": { "name": { "type": "String" } } },
+  "@hostedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "parkfinityHost": "ParkFinity host",
   "joinedIn": "Joined {year}",
-  "@joinedIn": { "placeholders": { "year": { "type": "String" } } },
+  "@joinedIn": {
+    "placeholders": {
+      "year": {
+        "type": "String"
+      }
+    }
+  },
   "freeOf": "{free} of {total} free",
-  "@freeOf": { "placeholders": { "free": { "type": "int" }, "total": { "type": "int" } } },
+  "@freeOf": {
+    "placeholders": {
+      "free": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "closed": "Closed",
+  "filters": "Filters",
+  "reset": "Reset",
+  "anyValue": "Any",
+  "distance": "Distance",
+  "maxPricePerHour": "Max price / hour",
+  "minimumRating": "Minimum rating",
+  "onSiteSecurity": "On-site security",
+  "showAll": "Show all",
+  "applyFilters": "{count, plural, =1{Apply 1 filter} other{Apply {count} filters}}",
+  "@applyFilters": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "availabilitySchedule": "Availability Schedule",
+  "securePayment": "Secure Payment",
+  "submitReview": "Submit Review",
+  "addCommentOptional": "Add a comment (optional)",
+  "rateTarget": "Rate {target}",
+  "@rateTarget": {
+    "placeholders": {
+      "target": {
+        "type": "String"
+      }
+    }
+  },
   "noDescription": "No description provided for this listing.",
   "reviewsWithCount": "Reviews ({count})",
-  "@reviewsWithCount": { "placeholders": { "count": { "type": "int" } } },
-
+  "@reviewsWithCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "availableSlotsLabel": "Available Slots: {free}/{total}",
-  "@availableSlotsLabel": { "placeholders": { "free": { "type": "int" }, "total": { "type": "int" } } },
+  "@availableSlotsLabel": {
+    "placeholders": {
+      "free": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "walletBalanceOption": "ParkFinity Wallet (Bal: {balance})",
-  "@walletBalanceOption": { "placeholders": { "balance": { "type": "String" } } },
+  "@walletBalanceOption": {
+    "placeholders": {
+      "balance": {
+        "type": "String"
+      }
+    }
+  },
   "onlinePaymentSsl": "Online Payment (SSLCommerz)",
   "baseRateLabel": "Base Rate ({type})",
-  "@baseRateLabel": { "placeholders": { "type": { "type": "String" } } },
+  "@baseRateLabel": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
   "platformFee": "Platform Fee",
   "payAmount": "Pay {amount}",
-  "@payAmount": { "placeholders": { "amount": { "type": "String" } } },
+  "@payAmount": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "vehicleNotAllowed": "This parking spot does not allow {type}s.",
-  "@vehicleNotAllowed": { "placeholders": { "type": { "type": "String" } } },
+  "@vehicleNotAllowed": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
   "sslUnderConstruction": "Direct SSLCommerz checkout is under construction. Please use your Wallet!",
   "extendedTo": "Extended to {time}.",
-  "@extendedTo": { "placeholders": { "time": { "type": "String" } } },
+  "@extendedTo": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "timeRemaining": "Time Remaining",
   "expiringSoon": "Expiring soon!",
   "parkingSpot": "Parking Spot",
   "findParkingBtn": "Find Parking",
-
   "slotsPerVehicleType": "Slots per Vehicle Type",
   "slotsPerVehicleHint": "Set how many spaces each vehicle type can use.",
   "addVehicleType": "Add vehicle type",
@@ -276,26 +388,77 @@
   "instantHint": "Riders can book immediately.",
   "manualHint": "You approve each booking request before it confirms.",
   "maxMbPerPhoto": "Max {mb}MB per photo",
-  "@maxMbPerPhoto": { "placeholders": { "mb": { "type": "String" } } },
+  "@maxMbPerPhoto": {
+    "placeholders": {
+      "mb": {
+        "type": "String"
+      }
+    }
+  },
   "maxMb": "Max {mb}MB",
-  "@maxMb": { "placeholders": { "mb": { "type": "String" } } },
+  "@maxMb": {
+    "placeholders": {
+      "mb": {
+        "type": "String"
+      }
+    }
+  },
   "photoTooLarge": "{name} is {mb}MB — max {max}MB per photo.",
-  "@photoTooLarge": { "placeholders": { "name": { "type": "String" }, "mb": { "type": "String" }, "max": { "type": "String" } } },
+  "@photoTooLarge": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "mb": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      }
+    }
+  },
   "videoTooLarge": "Video is {mb}MB — max {max}MB.",
-  "@videoTooLarge": { "placeholders": { "mb": { "type": "String" }, "max": { "type": "String" } } },
+  "@videoTooLarge": {
+    "placeholders": {
+      "mb": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      }
+    }
+  },
   "min3Photos": "Please select at least 3 photos.",
   "selectOneVideo": "Please select 1 video.",
   "addVehicleTypeSlot": "Add at least one vehicle type with a slot count.",
   "uploadingMedia": "Uploading media... This may take a minute.",
   "listingPublished": "Listing published successfully!",
   "failedUpload": "Failed to upload media or save listing: {error}",
-  "@failedUpload": { "placeholders": { "error": { "type": "String" } } },
+  "@failedUpload": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "locationPermissionDenied": "Location permission denied.",
   "couldNotGetLocation": "Could not get your location: {error}",
-  "@couldNotGetLocation": { "placeholders": { "error": { "type": "String" } } },
+  "@couldNotGetLocation": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "req": "Req",
   "rateBdt": "{label} (৳)",
-  "@rateBdt": { "placeholders": { "label": { "type": "String" } } },
+  "@rateBdt": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
   "myWallet": "My Wallet",
   "addFunds": "Add Funds",
   "fundsAdded": "Funds added successfully!",
@@ -306,5 +469,70 @@
   "add": "Add",
   "amountBdtWallet": "Amount (BDT)",
   "transactionHistory": "Transaction History",
-  "noTransactions": "No transactions yet."
+  "noTransactions": "No transactions yet.",
+  "phoneNumber": "Phone number",
+  "phoneNumberHelper": "Riders and owners use this to call each other",
+  "editProfileTitle": "Edit profile",
+  "profileUpdated": "Profile updated",
+  "changePhoto": "Change photo",
+  "verificationStatus": "Verification status",
+  "verifiedStatus": "Verified",
+  "pendingStatus": "Pending",
+  "notSubmittedStatus": "Not submitted",
+  "documentsSubmittedNote": "Your NID and licence were submitted at sign-up.",
+  "termsOfService": "Terms of Service",
+  "nameRequired": "Name is required",
+  "invalidPhone": "Enter a valid Bangladeshi mobile number",
+  "bookingDetails": "Booking details",
+  "bookingId": "Booking ID",
+  "upcoming": "Upcoming",
+  "activeTab": "Active",
+  "completedStatus": "Completed",
+  "startTime": "Start time",
+  "endTime": "End time",
+  "pickStartTime": "Pick start time",
+  "pickEndTime": "Pick end time",
+  "extendBooking": "Extend booking",
+  "paymentBreakdown": "Payment breakdown",
+  "baseAmount": "Base amount",
+  "peakSurcharge": "Peak hour surcharge",
+  "overstayCharge": "Overstay charge",
+  "commission": "Platform commission",
+  "totalPaid": "Total paid",
+  "vehicle": "Vehicle",
+  "callRider": "Call rider",
+  "callOwner": "Call owner",
+  "noPhoneOnFile": "No phone number on file",
+  "couldNotOpenDialer": "Could not open the dialer",
+  "qrCode": "QR code",
+  "spotQrCode": "Spot QR code",
+  "scanQr": "Scan QR",
+  "scanToStart": "Scan the spot QR to start parking",
+  "scanToEnd": "Scan again to end parking",
+  "checkIn": "Check in",
+  "checkOut": "Check out",
+  "checkedIn": "Checked in",
+  "checkedOut": "Checked out",
+  "enterCodeManually": "Enter the 6-character code instead",
+  "shortCode": "Short code",
+  "saveQrImage": "Save image",
+  "shareQr": "Share / print",
+  "qrSaved": "QR code saved",
+  "printAndMountQr": "Print this and mount it at your parking spot. Riders scan it to start and end parking.",
+  "cameraPermissionNeeded": "Camera permission is needed to scan",
+  "earnings": "Earnings",
+  "totalEarnings": "Total earnings",
+  "withdraw": "Withdraw",
+  "pendingWithdrawals": "Pending withdrawals",
+  "ownerWalletNote": "Your booking earnings land here after the Parkfinity commission. Withdraw to your bank account.",
+  "riderWalletNote": "Top up your wallet to book instantly.",
+  "photos": "Photos",
+  "close": "Close",
+  "retry": "Retry",
+  "save": "Save",
+  "loadingLabel": "Loading…",
+  "somethingWentWrong": "Something went wrong",
+  "searchHint": "Search a place",
+  "yourLocation": "Your location",
+  "noResults": "No results"
 }

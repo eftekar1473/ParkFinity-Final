@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../controllers/owner_bookings_provider.dart';
 import '../../../../shared/data/models/booking_model.dart';
 import '../../../rider/data/repositories/reviews_repository.dart';
+import '../../../rider/presentation/screens/rider_booking_history_screen.dart'
+    show BookingCard;
+import '../../../shared/data/my_profile_repository.dart';
 import '../../../shared/presentation/widgets/review_sheet.dart';
 import '../../../../l10n/generated/app_localizations.dart';
 
@@ -14,21 +18,17 @@ class OwnerBookingHistoryScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final bookingsAsync = ref.watch(ownerBookingsProvider);
-    final reviewed = ref.watch(reviewedBookingIdsProvider(true)).value ?? const <String>{};
-    final currencyFormatter = NumberFormat.currency(symbol: '৳', decimalDigits: 0);
+    final reviewed =
+        ref.watch(reviewedBookingIdsProvider(true)).value ?? const <String>{};
+    final money = NumberFormat.currency(symbol: '৳', decimalDigits: 0);
 
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        backgroundColor: Colors.grey[50],
         appBar: AppBar(
-          title: Text(l10n.bookings, style: const TextStyle(fontWeight: FontWeight.bold)),
-          backgroundColor: Colors.white,
-          elevation: 0,
+          title: Text(l10n.bookings,
+              style: const TextStyle(fontWeight: FontWeight.bold)),
           bottom: TabBar(
-            labelColor: Colors.deepPurple,
-            unselectedLabelColor: Colors.grey,
-            indicatorColor: Colors.deepPurple,
             tabs: [
               Tab(text: l10n.upcomingActive),
               Tab(text: l10n.past),
@@ -40,13 +40,19 @@ class OwnerBookingHistoryScreen extends ConsumerWidget {
           error: (err, stack) => Center(child: Text('${l10n.error}: $err')),
           data: (bookings) {
             final now = DateTime.now();
-            final activeBookings = bookings.where((b) => b.status == 'Pending' && b.endTime.isAfter(now)).toList();
-            final pastBookings = bookings.where((b) => !(b.status == 'Pending' && b.endTime.isAfter(now))).toList();
+            const live = {'Pending', 'Confirmed', 'Active'};
+            final current = bookings
+                .where((b) => live.contains(b.status) && b.endTime.isAfter(now))
+                .toList();
+            final past = bookings
+                .where((b) =>
+                    !(live.contains(b.status) && b.endTime.isAfter(now)))
+                .toList();
 
             return TabBarView(
               children: [
-                _buildList(context, ref, activeBookings, currencyFormatter, reviewed),
-                _buildList(context, ref, pastBookings, currencyFormatter, reviewed),
+                _List(bookings: current, money: money, reviewed: reviewed),
+                _List(bookings: past, money: money, reviewed: reviewed),
               ],
             );
           },
@@ -54,172 +60,99 @@ class OwnerBookingHistoryScreen extends ConsumerWidget {
       ),
     );
   }
+}
 
-  Widget _buildList(BuildContext context, WidgetRef ref,
-      List<BookingModel> bookings, NumberFormat currencyFormatter,
-      Set<String> reviewed) {
+class _List extends ConsumerWidget {
+  final List<BookingModel> bookings;
+  final NumberFormat money;
+  final Set<String> reviewed;
+
+  const _List({
+    required this.bookings,
+    required this.money,
+    required this.reviewed,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     if (bookings.isEmpty) {
-      return Center(child: Text(l10n.noBookings, style: const TextStyle(color: Colors.grey)));
+      return Center(
+        child: Text(l10n.noBookings,
+            style: TextStyle(color: Theme.of(context).hintColor)),
+      );
     }
-    
-    return ListView.builder(
-      padding: const EdgeInsets.all(16.0),
-      itemCount: bookings.length,
-      itemBuilder: (context, index) {
-        final booking = bookings[index];
-        final isUpcoming = booking.status == 'Pending' && booking.endTime.isAfter(DateTime.now());
-        final isActive = booking.status == 'Pending' && booking.startTime.isBefore(DateTime.now()) && booking.endTime.isAfter(DateTime.now());
-        
-        String statusLabel = booking.status;
-        Color statusColor = Colors.grey;
-        
-        if (isActive) {
-          statusLabel = l10n.statusActive;
-          statusColor = Colors.green;
-        } else if (isUpcoming) {
-          statusLabel = l10n.statusUpcoming;
-          statusColor = Colors.orange;
-        } else if (booking.status == 'Completed') {
-          statusLabel = l10n.statusCompleted;
-          statusColor = Colors.blue;
-        } else if (booking.status == 'Cancelled') {
-          statusLabel = l10n.statusCancelled;
-          statusColor = Colors.red;
-        }
 
-        final dateStr = '${DateFormat('dd MMM yyyy').format(booking.startTime)}, ${DateFormat('HH:mm').format(booking.startTime)} - ${DateFormat('HH:mm').format(booking.endTime)}';
+    return RefreshIndicator(
+      onRefresh: () async => ref.invalidate(ownerBookingsProvider),
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16.0),
+        itemCount: bookings.length,
+        itemBuilder: (context, index) {
+          final b = bookings[index];
+          final canReview =
+              b.status == 'Completed' && b.id != null && !reviewed.contains(b.id);
 
-        // Use profile ID/Name from rider if we had it, but for now just "Rider"
-        final riderName = l10n.riderLabel(booking.riderId.substring(0, 5));
-
-        final canReview = booking.status == 'Completed' &&
-            booking.id != null &&
-            !reviewed.contains(booking.id);
-
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 16.0),
-          child: _buildBookingCard(
-            riderName: riderName,
-            listingTitle: booking.listing?.title ?? l10n.parkingSpot,
-            date: dateStr,
-            amount: currencyFormatter.format(booking.ownerEarnings), // Owners see their earnings
-            status: statusLabel,
-            statusColor: statusColor,
-            canReview: canReview,
-            reviewLabel: l10n.rateThisRider,
-            onReview: canReview
-                ? () async {
-                    final ok = await ReviewSheet.show(
-                      context,
-                      bookingId: booking.id!,
-                      asOwner: true,
-                      targetLabel: l10n.thisRider,
-                    );
-                    if (ok == true) {
-                      ref.invalidate(reviewedBookingIdsProvider(true));
-                    }
-                  }
-                : null,
-          ),
-        );
-      },
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _RiderLine(riderId: b.riderId),
+                const SizedBox(height: 6),
+                BookingCard(
+                  booking: b,
+                  money: money,
+                  asOwner: true,
+                  onTap: () =>
+                      context.push('/booking?owner=1', extra: b),
+                  onReview: canReview
+                      ? () async {
+                          final ok = await ReviewSheet.show(
+                            context,
+                            bookingId: b.id!,
+                            asOwner: true,
+                            targetLabel: l10n.thisRider,
+                          );
+                          if (ok == true) {
+                            ref.invalidate(reviewedBookingIdsProvider(true));
+                          }
+                        }
+                      : null,
+                ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
+}
 
-  Widget _buildBookingCard({
-    required String riderName,
-    required String listingTitle,
-    required String date,
-    required String amount,
-    required String status,
-    required Color statusColor,
-    bool canReview = false,
-    String reviewLabel = '',
-    VoidCallback? onReview,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 8, offset: const Offset(0, 2)),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(riderName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Icon(Icons.local_parking, size: 14, color: Colors.grey),
-                        const SizedBox(width: 4),
-                        Expanded(child: Text(listingTitle, style: TextStyle(color: Colors.grey[600], fontSize: 12))),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  status,
-                  style: TextStyle(color: statusColor, fontWeight: FontWeight.bold, fontSize: 12),
-                ),
-              ),
-            ],
-          ),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12),
-            child: Divider(),
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.calendar_today, size: 16, color: Colors.deepPurple[400]),
-                  const SizedBox(width: 8),
-                  Text(date, style: const TextStyle(fontWeight: FontWeight.w500)),
-                ],
-              ),
-              Text(amount, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.deepPurple)),
-            ],
-          ),
-          if (canReview) ...[
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: onReview,
-                icon: const Icon(Icons.star_border, size: 18),
-                label: Text(reviewLabel),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.deepPurple,
-                  side: const BorderSide(color: Colors.deepPurple),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
+/// Who booked. Falls back to a shortened id while the profile loads or if the
+/// rider has no name set.
+class _RiderLine extends ConsumerWidget {
+  final String riderId;
+  const _RiderLine({required this.riderId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final name = ref.watch(publicProfileProvider(riderId)).value?.fullName;
+
+    return Row(
+      children: [
+        Icon(Icons.person_outline, size: 16, color: theme.hintColor),
+        const SizedBox(width: 6),
+        Text(
+          (name != null && name.trim().isNotEmpty)
+              ? name
+              : l10n.riderLabel(riderId.substring(0, 5)),
+          style: TextStyle(
+              color: theme.hintColor, fontWeight: FontWeight.w600, fontSize: 13),
+        ),
+      ],
     );
   }
 }

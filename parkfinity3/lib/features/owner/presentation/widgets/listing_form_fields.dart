@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../l10n/generated/app_localizations.dart';
+
 /// Media size caps (free-tier friendly). Referenced by add/edit listing.
 const double kMaxImageMb = 5;
 const double kMaxVideoMb = 50;
@@ -43,17 +45,18 @@ class SlotCapacityEditor extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final unused =
         kVehicleTypes.where((t) => !capacity.containsKey(t)).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text('Slots per Vehicle Type',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        Text(l10n.slotsPerVehicleType,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         const SizedBox(height: 4),
-        Text('Set how many spaces each vehicle type can use.',
-            style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+        Text(l10n.slotsPerVehicleHint,
+            style: TextStyle(color: Theme.of(context).hintColor, fontSize: 12)),
         const SizedBox(height: 12),
         ...capacity.entries.map((e) => Padding(
               padding: const EdgeInsets.only(bottom: 8),
@@ -82,7 +85,7 @@ class SlotCapacityEditor extends StatelessWidget {
                     },
                   ),
                   IconButton(
-                    icon: const Icon(Icons.delete_outline, color: Colors.red),
+                    icon: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error),
                     onPressed: () {
                       final m = Map<String, int>.from(capacity)..remove(e.key);
                       onChanged(m);
@@ -102,9 +105,9 @@ class SlotCapacityEditor extends StatelessWidget {
               },
               itemBuilder: (_) =>
                   unused.map((t) => PopupMenuItem(value: t, child: Text(t))).toList(),
-              child: const Chip(
-                avatar: Icon(Icons.add, size: 18),
-                label: Text('Add vehicle type'),
+              child: Chip(
+                avatar: const Icon(Icons.add, size: 18),
+                label: Text(l10n.addVehicleType),
               ),
             ),
           ),
@@ -126,32 +129,31 @@ class BookingModeSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text('Booking Mode',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        Text(l10n.bookingMode,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
         SegmentedButton<String>(
-          segments: const [
+          segments: [
             ButtonSegment(
                 value: 'instant',
-                label: Text('Instant'),
-                icon: Icon(Icons.flash_on)),
+                label: Text(l10n.instant),
+                icon: const Icon(Icons.flash_on)),
             ButtonSegment(
                 value: 'manual',
-                label: Text('Approve'),
-                icon: Icon(Icons.how_to_reg)),
+                label: Text(l10n.approve),
+                icon: const Icon(Icons.how_to_reg)),
           ],
           selected: {mode},
           onSelectionChanged: (s) => onChanged(s.first),
         ),
         const SizedBox(height: 4),
         Text(
-          mode == 'instant'
-              ? 'Riders can book immediately.'
-              : 'You approve each booking request before it confirms.',
-          style: TextStyle(color: Colors.grey[600], fontSize: 12),
+          mode == 'instant' ? l10n.instantHint : l10n.manualHint,
+          style: TextStyle(color: Theme.of(context).hintColor, fontSize: 12),
         ),
       ],
     );
@@ -195,8 +197,8 @@ class WeeklyScheduleEditor extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text('Availability Schedule',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        Text(AppLocalizations.of(context).availabilitySchedule,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
         ...kWeekdays.map((day) {
           final d = (schedule[day] as Map?) ?? const {};
@@ -227,9 +229,10 @@ class WeeklyScheduleEditor extends StatelessWidget {
                   child: Text(d['to'] as String? ?? '23:59'),
                 ),
               ] else
-                const Padding(
-                  padding: EdgeInsets.only(left: 8),
-                  child: Text('Closed', style: TextStyle(color: Colors.grey)),
+                Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: Text(AppLocalizations.of(context).closed,
+                      style: TextStyle(color: Theme.of(context).hintColor)),
                 ),
             ],
           );

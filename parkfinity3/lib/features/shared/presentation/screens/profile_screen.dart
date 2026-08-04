@@ -1,370 +1,389 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
-import 'dart:io';
+
 import '../../../auth/presentation/auth_controller.dart';
-import '../../../auth/data/auth_repository.dart';
-import '../../../../core/data/repositories/storage_repository.dart';
-import '../../data/document_verification_service.dart';
-import '../../data/notification_service.dart';
+import '../../data/my_profile_repository.dart';
+import '../widgets/notification_bell.dart';
 import '../../../../core/controllers/settings_controller.dart';
 import '../../../../l10n/generated/app_localizations.dart';
 
-class ProfileScreen extends ConsumerStatefulWidget {
+class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
   @override
-  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final profileAsync = ref.watch(currentProfileProvider);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(l10n.myProfile,
+            style: const TextStyle(fontWeight: FontWeight.bold)),
+        actions: const [NotificationBell()],
+      ),
+      body: profileAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(l10n.somethingWentWrong),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () => ref.invalidate(currentProfileProvider),
+                child: Text(l10n.retry),
+              ),
+            ],
+          ),
+        ),
+        data: (profile) {
+          if (profile == null) {
+            return Center(child: Text(l10n.somethingWentWrong));
+          }
+          final isOwner = profile.isOwner;
+
+          return RefreshIndicator(
+            onRefresh: () async => ref.invalidate(currentProfileProvider),
+            child: ListView(
+              children: [
+                _Header(profile: profile),
+                const SizedBox(height: 24),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _SectionLabel(l10n.accountSettings),
+                      _Tile(
+                        icon: Icons.person_outline,
+                        title: l10n.editProfile,
+                        onTap: () => context.push('/profile/edit'),
+                      ),
+                      if (!isOwner)
+                        _Tile(
+                          icon: Icons.directions_car_outlined,
+                          title: l10n.myVehicles,
+                          onTap: () => context.push('/rider/profile/vehicles'),
+                        ),
+                      _Tile(
+                        icon: Icons.history,
+                        title: l10n.bookingHistory,
+                        onTap: () => context.push(
+                            isOwner ? '/owner/bookings' : '/rider/bookings'),
+                      ),
+                      // KYC documents are collected once during sign-up, so this
+                      // is a status readout, not another upload entry point.
+                      _StatusTile(profile: profile),
+
+                      const SizedBox(height: 24),
+                      _SectionLabel(l10n.settings),
+                      _Tile(
+                        icon: Icons.language,
+                        title: l10n.language,
+                        trailing: Consumer(
+                          builder: (context, ref, _) {
+                            final locale = ref.watch(localeProvider);
+                            return Text(
+                              locale?.languageCode == 'bn' ? 'বাংলা' : 'English',
+                              style: TextStyle(
+                                  color: theme.hintColor,
+                                  fontWeight: FontWeight.w500),
+                            );
+                          },
+                        ),
+                        onTap: () => ref.read(localeProvider.notifier).toggle(),
+                      ),
+                      _Tile(
+                        icon: Icons.brightness_6_outlined,
+                        title: l10n.theme,
+                        trailing: Consumer(
+                          builder: (context, ref, _) {
+                            final mode = ref.watch(themeModeProvider);
+                            final label = switch (mode) {
+                              ThemeMode.dark => 'Dark',
+                              ThemeMode.light => 'Light',
+                              _ => 'System',
+                            };
+                            return Text(label,
+                                style: TextStyle(
+                                    color: theme.hintColor,
+                                    fontWeight: FontWeight.w500));
+                          },
+                        ),
+                        onTap: () =>
+                            ref.read(themeModeProvider.notifier).cycle(),
+                      ),
+
+                      const SizedBox(height: 24),
+                      _SectionLabel(l10n.supportAbout),
+                      _Tile(
+                        icon: Icons.help_outline,
+                        title: l10n.helpCenter,
+                        onTap: () => context.push('/page/help'),
+                      ),
+                      _Tile(
+                        icon: Icons.policy_outlined,
+                        title: l10n.privacyPolicy,
+                        onTap: () => context.push('/page/privacy'),
+                      ),
+                      _Tile(
+                        icon: Icons.gavel_outlined,
+                        title: l10n.termsOfService,
+                        onTap: () => context.push('/page/terms'),
+                      ),
+
+                      const SizedBox(height: 24),
+                      ListTile(
+                        onTap: () =>
+                            ref.read(authControllerProvider.notifier).signOut(),
+                        leading: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.error.withValues(alpha: .1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(Icons.logout,
+                              color: theme.colorScheme.error),
+                        ),
+                        title: Text(l10n.logOut,
+                            style: TextStyle(
+                                color: theme.colorScheme.error,
+                                fontWeight: FontWeight.bold)),
+                      ),
+                      const SizedBox(height: 32),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
 }
 
-class _ProfileScreenState extends ConsumerState<ProfileScreen> {
-  final ImagePicker _picker = ImagePicker();
-  bool _isUploading = false;
-
-  Future<void> _uploadDocument(String column) async {
-    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-    if (image == null) return;
-
-    setState(() => _isUploading = true);
-
-    try {
-      final user = ref.read(authStateChangesProvider).value?.session?.user;
-      if (user == null) throw Exception('Not logged in');
-
-      // AI Document Verification
-      final verificationService = ref.read(documentVerificationProvider);
-      final file = File(image.path);
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Verifying document with AI... Please wait.')),
-        );
-      }
-
-      final result = await verificationService.verifyNid(file);
-
-      if (!result.valid) {
-        throw Exception(result.reason);
-      }
-
-      final storageRepo = ref.read(storageRepositoryProvider);
-      final authRepo = ref.read(authRepositoryProvider);
-
-      // Upload to storage
-      final imageUrl = await storageRepo.uploadImage(file, 'documents', user.id);
-
-      // Update database profile
-      await authRepo.updateDocumentUrl(column, imageUrl);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Document verified and uploaded successfully!')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$e'), backgroundColor: Colors.red),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isUploading = false);
-      }
-    }
-  }
+class _Header extends StatelessWidget {
+  final UserProfile profile;
+  const _Header({required this.profile});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        title: const Text('My Profile', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        actions: [
-          Consumer(
-            builder: (context, ref, _) {
-              final user = ref.watch(authStateChangesProvider).value?.session?.user;
-              if (user == null) return const SizedBox.shrink();
-              
-              final unreadCountAsync = ref.watch(unreadNotificationCountProvider(user.id));
-              final unreadCount = unreadCountAsync.value ?? 0;
-              
-              return Stack(
-                alignment: Alignment.center,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.notifications_outlined, color: Colors.deepPurple),
-                    onPressed: () {
-                      context.push('/notifications');
-                    },
-                  ),
-                  if (unreadCount > 0)
-                    Positioned(
-                      right: 8,
-                      top: 8,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: Colors.red,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Text(
-                          '$unreadCount',
-                          style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
-                        ),
-                      ),
+    final theme = Theme.of(context);
+    final avatar = profile.avatarUrl;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLow,
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(32),
+          bottomRight: Radius.circular(32),
+        ),
+      ),
+      child: Column(
+        children: [
+          GestureDetector(
+            onTap: () => context.push('/profile/edit'),
+            child: Stack(
+              children: [
+                CircleAvatar(
+                  radius: 50,
+                  backgroundColor: theme.colorScheme.primaryContainer,
+                  backgroundImage: avatar != null ? NetworkImage(avatar) : null,
+                  child: avatar == null
+                      ? Text(
+                          profile.displayName.characters.first.toUpperCase(),
+                          style: TextStyle(
+                            fontSize: 36,
+                            color: theme.colorScheme.onPrimaryContainer,
+                          ),
+                        )
+                      : null,
+                ),
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary,
+                      shape: BoxShape.circle,
                     ),
-                ],
-              );
-            }
+                    child: Icon(Icons.edit,
+                        color: theme.colorScheme.onPrimary, size: 20),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(profile.displayName,
+              style: const TextStyle(
+                  fontSize: 24, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          Text(profile.email,
+              style: TextStyle(color: theme.hintColor, fontSize: 16)),
+          if (profile.phoneNumber != null) ...[
+            const SizedBox(height: 2),
+            Text(profile.phoneNumber!,
+                style: TextStyle(color: theme.hintColor, fontSize: 15)),
+          ],
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 8,
+            children: [
+              _Chip(
+                icon: Icons.star,
+                color: Colors.amber,
+                // Riders with no reviews yet shouldn't see a fake 4.8.
+                label: profile.reviewCount == 0
+                    ? '—'
+                    : '${profile.avgRating.toStringAsFixed(1)} (${profile.reviewCount})',
+              ),
+              _Chip(
+                icon: profile.isOwner
+                    ? Icons.storefront_outlined
+                    : Icons.directions_car_outlined,
+                color: theme.colorScheme.primary,
+                label: profile.role,
+              ),
+            ],
           ),
         ],
       ),
-      body: _isUploading 
-          ? const Center(child: CircularProgressIndicator()) 
-          : SingleChildScrollView(
-              child: Column(
-                children: [
-                  // Header Profile Info
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.only(
-                        bottomLeft: Radius.circular(32),
-                        bottomRight: Radius.circular(32),
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        Stack(
-                          children: [
-                            const CircleAvatar(
-                              radius: 50,
-                              backgroundImage: NetworkImage('https://i.pravatar.cc/150?img=11'),
-                            ),
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: const BoxDecoration(
-                                  color: Colors.deepPurple,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(Icons.edit, color: Colors.white, size: 20),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        const Text('Ahmed', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 4),
-                        Text('ahmed@example.com', style: TextStyle(color: Colors.grey[600], fontSize: 16)),
-                        const SizedBox(height: 16),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: Colors.amber.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.star, color: Colors.amber, size: 20),
-                              SizedBox(width: 8),
-                              Text('4.8 Rating', style: TextStyle(fontWeight: FontWeight.bold)),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 24),
-                  
-                  // Settings List
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Padding(
-                          padding: EdgeInsets.only(left: 16, bottom: 8),
-                          child: Text('Account Settings', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
-                        ),
-                        _buildListTile(
-                          icon: Icons.person_outline,
-                          title: 'Edit Profile',
-                          onTap: () {},
-                        ),
-                        _buildListTile(
-                          icon: Icons.directions_car_outlined,
-                          title: 'My Vehicles',
-                          onTap: () {
-                            context.push('/rider/profile/vehicles');
-                          },
-                        ),
-                        _buildListTile(
-                          icon: Icons.history,
-                          title: 'Booking History',
-                          onTap: () {
-                            context.push('/rider/profile/history');
-                          },
-                        ),
-                        _buildListTile(
-                          icon: Icons.badge_outlined,
-                          title: 'Upload NID',
-                          onTap: () => _uploadDocument('nid_url'),
-                        ),
-                        _buildListTile(
-                          icon: Icons.card_membership_outlined,
-                          title: 'Upload Driving License',
-                          onTap: () => _uploadDocument('driving_license_url'),
-                        ),
-
-                        const SizedBox(height: 24),
-
-                        Padding(
-                          padding: const EdgeInsets.only(left: 16, bottom: 8),
-                          child: Text(AppLocalizations.of(context).settings, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
-                        ),
-                        // Language toggle
-                        _buildSettingsTile(
-                          icon: Icons.language,
-                          title: AppLocalizations.of(context).language,
-                          trailing: Consumer(
-                            builder: (context, ref, _) {
-                              final locale = ref.watch(localeProvider);
-                              return Text(
-                                locale?.languageCode == 'bn' ? 'বাংলা' : 'English',
-                                style: TextStyle(color: Colors.grey[600], fontWeight: FontWeight.w500),
-                              );
-                            },
-                          ),
-                          onTap: () {
-                            ref.read(localeProvider.notifier).toggle();
-                          },
-                        ),
-                        // Theme toggle
-                        _buildSettingsTile(
-                          icon: Icons.brightness_6_outlined,
-                          title: AppLocalizations.of(context).theme,
-                          trailing: Consumer(
-                            builder: (context, ref, _) {
-                              final themeMode = ref.watch(themeModeProvider);
-                              final label = switch (themeMode) {
-                                ThemeMode.dark  => 'Dark',
-                                ThemeMode.light => 'Light',
-                                _               => 'System',
-                              };
-                              return Text(
-                                label,
-                                style: TextStyle(color: Colors.grey[600], fontWeight: FontWeight.w500),
-                              );
-                            },
-                          ),
-                          onTap: () {
-                            ref.read(themeModeProvider.notifier).cycle();
-                          },
-                        ),
-                        
-                        const SizedBox(height: 24),
-                        
-                        const Padding(
-                          padding: EdgeInsets.only(left: 16, bottom: 8),
-                          child: Text('Support & About', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
-                        ),
-                        _buildListTile(
-                          icon: Icons.help_outline,
-                          title: 'Help Center',
-                          onTap: () {},
-                        ),
-                        _buildListTile(
-                          icon: Icons.policy_outlined,
-                          title: 'Privacy Policy',
-                          onTap: () {},
-                        ),
-                        
-                        const SizedBox(height: 24),
-                        
-                        // Log Out Button
-                        ListTile(
-                          onTap: () {
-                            ref.read(authControllerProvider.notifier).signOut();
-                          },
-                          leading: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(color: Colors.red.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-                            child: const Icon(Icons.logout, color: Colors.red),
-                          ),
-                          title: const Text('Log Out', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
-                        ),
-                        const SizedBox(height: 32),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
     );
   }
+}
 
-  Widget _buildSettingsTile({required IconData icon, required String title, required Widget trailing, required VoidCallback onTap}) {
+class _Chip extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String label;
+  const _Chip({required this.icon, required this.color, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 18),
+          const SizedBox(width: 8),
+          Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusTile extends StatelessWidget {
+  final UserProfile profile;
+  const _StatusTile({required this.profile});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+
+    final (label, color, icon) = switch (profile.kycStatus) {
+      'verified' => (l10n.verifiedStatus, Colors.green, Icons.verified_user),
+      'pending' => (l10n.pendingStatus, Colors.orange, Icons.hourglass_top),
+      _ => (l10n.notSubmittedStatus, theme.colorScheme.error, Icons.gpp_maybe),
+    };
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: theme.dividerColor),
+      ),
+      child: ListTile(
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: color),
+        ),
+        title: Text(l10n.verificationStatus,
+            style: const TextStyle(fontWeight: FontWeight.w500)),
+        subtitle: Text(l10n.documentsSubmittedNote,
+            style: TextStyle(color: theme.hintColor, fontSize: 12)),
+        trailing: Text(label,
+            style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+      ),
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  final String text;
+  const _SectionLabel(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 16, bottom: 8),
+      child: Text(
+        text,
+        style: TextStyle(
+            fontWeight: FontWeight.bold, color: Theme.of(context).hintColor),
+      ),
+    );
+  }
+}
+
+class _Tile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final Widget? trailing;
+  final VoidCallback onTap;
+  const _Tile({
+    required this.icon,
+    required this.title,
+    required this.onTap,
+    this.trailing,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: theme.dividerColor),
       ),
       child: ListTile(
         onTap: onTap,
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.deepPurple.withValues(alpha: 0.1),
+            color: theme.colorScheme.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(icon, color: Colors.deepPurple),
+          child: Icon(icon, color: theme.colorScheme.primary),
         ),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            trailing,
-            const SizedBox(width: 4),
-            const Icon(Icons.chevron_right, color: Colors.grey),
+            if (trailing != null) ...[trailing!, const SizedBox(width: 4)],
+            Icon(Icons.chevron_right, color: theme.hintColor),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildListTile({required IconData icon, required String title, required VoidCallback onTap}) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: ListTile(
-        onTap: onTap,
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.deepPurple.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(icon, color: Colors.deepPurple),
-        ),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
-        trailing: const Icon(Icons.chevron_right, color: Colors.grey),
       ),
     );
   }

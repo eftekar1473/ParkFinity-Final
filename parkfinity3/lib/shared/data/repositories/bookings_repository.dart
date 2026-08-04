@@ -117,9 +117,22 @@ class BookingsRepository {
 
     final response = await _client
         .from('bookings')
-        .select('*, profiles(*)')
+        // listings() is needed for the details screen (address, coords, phone).
+        .select('*, profiles(*), listings(*)')
         .inFilter('listing_id', listingIds)
         .order('created_at', ascending: false);
     return (response as List).map((e) => BookingModel.fromJson(e)).toList();
+  }
+
+  /// Single booking by id — used when a notification carries a `booking_id`
+  /// and we need the full row to push the details screen.
+  Future<BookingModel?> getBooking(String bookingId) async {
+    final rows = await _client
+        .from('bookings')
+        .select('*, profiles(*), listings(*)')
+        .eq('id', bookingId)
+        .limit(1);
+    if ((rows as List).isEmpty) return null;
+    return BookingModel.fromJson(rows.first);
   }
 }

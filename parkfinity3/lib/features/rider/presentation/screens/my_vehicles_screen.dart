@@ -46,9 +46,9 @@ class _MyVehiclesScreenState extends ConsumerState<MyVehiclesScreen> {
         builder: (context, setModalState) {
           final l10n = AppLocalizations.of(context);
           return Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerLow,
+              borderRadius: const BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
             ),
             padding: EdgeInsets.only(
               bottom: MediaQuery.of(context).viewInsets.bottom + 24,
@@ -130,8 +130,8 @@ class _MyVehiclesScreenState extends ConsumerState<MyVehiclesScreen> {
                     },
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      backgroundColor: Colors.deepPurple,
-                      foregroundColor: Colors.white,
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
                     ),
                     child: Text(l10n.saveVehicle, style: const TextStyle(fontSize: 16)),
                   ),
@@ -167,7 +167,7 @@ class _MyVehiclesScreenState extends ConsumerState<MyVehiclesScreen> {
                 }
               }
             },
-            child: Text(l10n.delete, style: const TextStyle(color: Colors.red)),
+            child: Text(l10n.delete, style: TextStyle(color: Theme.of(context).colorScheme.error)),
           ),
         ],
       ),
@@ -180,10 +180,10 @@ class _MyVehiclesScreenState extends ConsumerState<MyVehiclesScreen> {
     final vehiclesAsync = ref.watch(vehiclesControllerProvider);
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
         title: Text(l10n.myVehicles, style: const TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
         elevation: 0,
       ),
       body: vehiclesAsync.when(
@@ -214,9 +214,9 @@ class _MyVehiclesScreenState extends ConsumerState<MyVehiclesScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showAddVehicleBottomSheet(context),
-        backgroundColor: Colors.deepPurple,
-        icon: const Icon(Icons.add, color: Colors.white),
-        label: Text(l10n.addVehicle, style: const TextStyle(color: Colors.white)),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        icon: Icon(Icons.add, color: Theme.of(context).colorScheme.surfaceContainerLow),
+        label: Text(l10n.addVehicle, style: TextStyle(color: Theme.of(context).colorScheme.surfaceContainerLow)),
       ),
     );
   }
@@ -241,9 +241,9 @@ class _MyVehiclesScreenState extends ConsumerState<MyVehiclesScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDefault ? Colors.deepPurple : Colors.grey.shade200, width: isDefault ? 2 : 1),
+        border: Border.all(color: isDefault ? Theme.of(context).colorScheme.primary : Theme.of(context).hintColor, width: isDefault ? 2 : 1),
         boxShadow: [
           BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
         ],
@@ -253,10 +253,10 @@ class _MyVehiclesScreenState extends ConsumerState<MyVehiclesScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.deepPurple.withValues(alpha: 0.1),
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(getVehicleIcon(vehicle.type), color: Colors.deepPurple, size: 28),
+            child: Icon(getVehicleIcon(vehicle.type), color: Theme.of(context).colorScheme.primary, size: 28),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -269,12 +269,12 @@ class _MyVehiclesScreenState extends ConsumerState<MyVehiclesScreen> {
                   ],
                 ),
                 const SizedBox(height: 4),
-                Text(vehicle.licensePlate, style: TextStyle(color: Colors.grey[600], letterSpacing: 1.2)),
+                Text(vehicle.licensePlate, style: TextStyle(color: Theme.of(context).hintColor, letterSpacing: 1.2)),
               ],
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.delete, color: Colors.red),
+            icon: Icon(Icons.delete, color: Theme.of(context).colorScheme.error),
             onPressed: () => _deleteVehicle(vehicle),
           ),
         ],

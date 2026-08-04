@@ -695,6 +695,58 @@ class AppLocalizationsBn extends AppLocalizations {
   String get closed => 'বন্ধ';
 
   @override
+  String get filters => 'ফিল্টার';
+
+  @override
+  String get reset => 'রিসেট';
+
+  @override
+  String get anyValue => 'যেকোনো';
+
+  @override
+  String get distance => 'দূরত্ব';
+
+  @override
+  String get maxPricePerHour => 'সর্বোচ্চ দাম / ঘণ্টা';
+
+  @override
+  String get minimumRating => 'সর্বনিম্ন রেটিং';
+
+  @override
+  String get onSiteSecurity => 'সাইটে নিরাপত্তা';
+
+  @override
+  String get showAll => 'সব দেখান';
+
+  @override
+  String applyFilters(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countটি ফিল্টার প্রয়োগ করুন',
+      one: '১টি ফিল্টার প্রয়োগ করুন',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get availabilitySchedule => 'সময়সূচি';
+
+  @override
+  String get securePayment => 'নিরাপদ পেমেন্ট';
+
+  @override
+  String get submitReview => 'রিভিউ জমা দিন';
+
+  @override
+  String get addCommentOptional => 'মন্তব্য যোগ করুন (ঐচ্ছিক)';
+
+  @override
+  String rateTarget(String target) {
+    return '$target রেট করুন';
+  }
+
+  @override
   String get noDescription => 'এই লিস্টিংয়ের জন্য কোনো বিবরণ নেই।';
 
   @override
@@ -870,4 +922,202 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get noTransactions => 'এখনো কোনো লেনদেন নেই।';
+
+  @override
+  String get phoneNumber => 'ফোন নম্বর';
+
+  @override
+  String get phoneNumberHelper => 'রাইডার ও মালিক এই নম্বরে ফোন করবেন';
+
+  @override
+  String get editProfileTitle => 'প্রোফাইল এডিট';
+
+  @override
+  String get profileUpdated => 'প্রোফাইল হালনাগাদ হয়েছে';
+
+  @override
+  String get changePhoto => 'ছবি পরিবর্তন';
+
+  @override
+  String get verificationStatus => 'যাচাই অবস্থা';
+
+  @override
+  String get verifiedStatus => 'যাচাইকৃত';
+
+  @override
+  String get pendingStatus => 'অপেক্ষমাণ';
+
+  @override
+  String get notSubmittedStatus => 'জমা দেওয়া হয়নি';
+
+  @override
+  String get documentsSubmittedNote =>
+      'সাইন-আপের সময় আপনার NID ও লাইসেন্স জমা হয়েছে।';
+
+  @override
+  String get termsOfService => 'সেবার শর্তাবলী';
+
+  @override
+  String get nameRequired => 'নাম দিতে হবে';
+
+  @override
+  String get invalidPhone => 'সঠিক বাংলাদেশি মোবাইল নম্বর দিন';
+
+  @override
+  String get bookingDetails => 'বুকিং বিস্তারিত';
+
+  @override
+  String get bookingId => 'বুকিং আইডি';
+
+  @override
+  String get upcoming => 'আসন্ন';
+
+  @override
+  String get activeTab => 'চলমান';
+
+  @override
+  String get completedStatus => 'সম্পন্ন';
+
+  @override
+  String get startTime => 'শুরুর সময়';
+
+  @override
+  String get endTime => 'শেষের সময়';
+
+  @override
+  String get pickStartTime => 'শুরুর সময় বাছুন';
+
+  @override
+  String get pickEndTime => 'শেষের সময় বাছুন';
+
+  @override
+  String get extendBooking => 'সময় বাড়ান';
+
+  @override
+  String get paymentBreakdown => 'পেমেন্ট বিবরণ';
+
+  @override
+  String get baseAmount => 'মূল ভাড়া';
+
+  @override
+  String get peakSurcharge => 'পিক আওয়ার চার্জ';
+
+  @override
+  String get overstayCharge => 'অতিরিক্ত সময়ের চার্জ';
+
+  @override
+  String get commission => 'প্লাটফর্ম কমিশন';
+
+  @override
+  String get totalPaid => 'মোট পরিশোধ';
+
+  @override
+  String get vehicle => 'যানবাহন';
+
+  @override
+  String get callRider => 'রাইডারকে কল';
+
+  @override
+  String get callOwner => 'মালিককে কল';
+
+  @override
+  String get noPhoneOnFile => 'ফোন নম্বর নেই';
+
+  @override
+  String get couldNotOpenDialer => 'ডায়ালার খোলা যায়নি';
+
+  @override
+  String get qrCode => 'QR কোড';
+
+  @override
+  String get spotQrCode => 'স্পটের QR কোড';
+
+  @override
+  String get scanQr => 'QR স্ক্যান';
+
+  @override
+  String get scanToStart => 'পার্কিং শুরু করতে স্পটের QR স্ক্যান করুন';
+
+  @override
+  String get scanToEnd => 'পার্কিং শেষ করতে আবার স্ক্যান করুন';
+
+  @override
+  String get checkIn => 'চেক-ইন';
+
+  @override
+  String get checkOut => 'চেক-আউট';
+
+  @override
+  String get checkedIn => 'চেক-ইন হয়েছে';
+
+  @override
+  String get checkedOut => 'চেক-আউট হয়েছে';
+
+  @override
+  String get enterCodeManually => 'বদলে ৬ অক্ষরের কোড লিখুন';
+
+  @override
+  String get shortCode => 'সংক্ষিপ্ত কোড';
+
+  @override
+  String get saveQrImage => 'ছবি সেভ করুন';
+
+  @override
+  String get shareQr => 'শেয়ার / প্রিন্ট';
+
+  @override
+  String get qrSaved => 'QR কোড সেভ হয়েছে';
+
+  @override
+  String get printAndMountQr =>
+      'এটি প্রিন্ট করে আপনার পার্কিং স্পটে লাগান। রাইডাররা এটি স্ক্যান করে পার্কিং শুরু ও শেষ করবেন।';
+
+  @override
+  String get cameraPermissionNeeded => 'স্ক্যান করতে ক্যামেরার অনুমতি দরকার';
+
+  @override
+  String get earnings => 'আয়';
+
+  @override
+  String get totalEarnings => 'মোট আয়';
+
+  @override
+  String get withdraw => 'উইথড্র';
+
+  @override
+  String get pendingWithdrawals => 'অপেক্ষমাণ উইথড্র';
+
+  @override
+  String get ownerWalletNote =>
+      'Parkfinity কমিশন বাদ দিয়ে আপনার বুকিং আয় এখানে জমা হয়। ব্যাংক অ্যাকাউন্টে উইথড্র করুন।';
+
+  @override
+  String get riderWalletNote => 'সাথে সাথে বুক করতে ওয়ালেট রিচার্জ করুন।';
+
+  @override
+  String get photos => 'ছবি';
+
+  @override
+  String get close => 'বন্ধ';
+
+  @override
+  String get retry => 'আবার চেষ্টা';
+
+  @override
+  String get save => 'সেভ';
+
+  @override
+  String get loadingLabel => 'লোড হচ্ছে…';
+
+  @override
+  String get somethingWentWrong => 'কিছু ভুল হয়েছে';
+
+  @override
+  String get searchHint => 'জায়গা খুঁজুন';
+
+  @override
+  String get yourLocation => 'আপনার লোকেশন';
+
+  @override
+  String get noResults => 'কিছু পাওয়া যায়নি';
 }

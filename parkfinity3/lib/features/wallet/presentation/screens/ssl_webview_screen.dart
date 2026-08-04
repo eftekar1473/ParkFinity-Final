@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
+import '../../../../l10n/generated/app_localizations.dart';
+
 class SSLWebViewScreen extends StatefulWidget {
   final String url;
   final String successUrl;
@@ -67,7 +69,7 @@ class _SSLWebViewScreenState extends State<SSLWebViewScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Secure Payment'),
+        title: Text(AppLocalizations.of(context).securePayment),
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.of(context).pop("CANCELLED"),

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 // Auth State
 import '../../features/auth/data/auth_repository.dart';
+import '../services/push_service.dart';
 
 // Scaffolds
 import 'scaffolds/rider_scaffold.dart';
@@ -33,10 +34,16 @@ import '../../features/wallet/presentation/screens/wallet_screen.dart';
 import '../../features/owner/presentation/screens/add_listing_screen.dart';
 import '../../features/owner/presentation/screens/edit_listing_screen.dart';
 import '../../features/owner/presentation/screens/withdrawal_screen.dart';
+import '../../features/owner/presentation/screens/listing_qr_screen.dart';
 
 // Shared
 import '../../features/shared/presentation/screens/profile_screen.dart';
+import '../../features/shared/presentation/screens/edit_profile_screen.dart';
+import '../../features/shared/presentation/screens/static_page_screen.dart';
 import '../../features/shared/presentation/screens/notifications_screen.dart';
+import '../../features/shared/presentation/screens/booking_details_screen.dart';
+import '../../features/parking/presentation/screens/qr_scan_screen.dart';
+import '../../shared/data/models/booking_model.dart';
 
 // Global Navigator Key
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -44,7 +51,7 @@ final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final goRouterProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateChangesProvider);
 
-  return GoRouter(
+  final router = GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/splash',
     redirect: (context, state) {
@@ -54,8 +61,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       final kyc = session?.user.userMetadata?['kyc_status'] as String?;
 
       final isSplash = state.matchedLocation == '/splash';
-      final isLoggingIn = state.matchedLocation == '/login' || state.matchedLocation == '/register';
       final loc = state.matchedLocation;
+
+      // Reachable without a session. Anything else bounces to /login.
+      const publicRoutes = {'/login', '/register', '/splash'};
+      final isLoggingIn = loc == '/login' || loc == '/register';
 
       if (authState.isLoading || authState.hasError) return null;
 
@@ -71,7 +81,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       }
 
       if (!isAuth) {
-        return isSplash || isLoggingIn ? '/login' : (isSplash ? null : '/login');
+        // Splash is public but has nothing to show once auth resolved.
+        if (isSplash) return '/login';
+        return publicRoutes.contains(loc) ? null : '/login';
       }
 
       // Authenticated below this point.
@@ -125,6 +137,37 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/notifications',
         builder: (context, state) => const NotificationsScreen(),
+      ),
+      GoRoute(
+        path: '/profile/edit',
+        builder: (context, state) => const EditProfileScreen(),
+      ),
+      GoRoute(
+        path: '/page/:slug',
+        builder: (context, state) =>
+            StaticPageScreen(slug: state.pathParameters['slug']!),
+      ),
+      GoRoute(
+        path: '/listing/qr',
+        builder: (context, state) =>
+            ListingQrScreen(listing: state.extra as ListingModel),
+      ),
+      // extra carries the booking; `owner=1` flips the screen to the owner view.
+      GoRoute(
+        path: '/booking',
+        builder: (context, state) => BookingDetailsScreen(
+          booking: state.extra as BookingModel,
+          asOwner: state.uri.queryParameters['owner'] == '1',
+        ),
+      ),
+      // mode is 'in' or 'out'; anything else is treated as check-in.
+      GoRoute(
+        path: '/scan/:mode',
+        builder: (context, state) => QrScanScreen(
+          mode: state.pathParameters['mode'] == 'out'
+              ? ScanMode.checkOut
+              : ScanMode.checkIn,
+        ),
       ),
 
       // ==========================================
@@ -259,4 +302,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
     ],
   );
+
+  // Let a push tap navigate. Queued inside PushService until this runs.
+  PushService.instance.attachNavigator(router.push);
+
+  return router;
 });

@@ -23,6 +23,31 @@ class PushService {
   final _local = FlutterLocalNotificationsPlugin();
   bool _ready = false;
 
+  /// Set by the router once it exists. A push can arrive before the first
+  /// frame, so taps are queued here rather than dropped.
+  void Function(String route)? onOpenRoute;
+  String? _pendingRoute;
+
+  /// Called by the router as soon as it can navigate; flushes any queued tap.
+  void attachNavigator(void Function(String route) open) {
+    onOpenRoute = open;
+    final pending = _pendingRoute;
+    if (pending != null) {
+      _pendingRoute = null;
+      open(pending);
+    }
+  }
+
+  void _openNotifications() {
+    const route = '/notifications';
+    final open = onOpenRoute;
+    if (open == null) {
+      _pendingRoute = route;
+      return;
+    }
+    open(route);
+  }
+
   static const _channel = AndroidNotificationChannel(
     'parkfinity_default',
     'ParkFinity Notifications',
@@ -40,6 +65,7 @@ class PushService {
       const InitializationSettings(
         android: AndroidInitializationSettings('@mipmap/ic_launcher'),
       ),
+      onDidReceiveNotificationResponse: (_) => _openNotifications(),
     );
     await _local
         .resolvePlatformSpecificImplementation<
@@ -68,6 +94,11 @@ class PushService {
         ),
       );
     });
+
+    // Tray tap while backgrounded, and the tap that cold-started the app.
+    FirebaseMessaging.onMessageOpenedApp.listen((_) => _openNotifications());
+    final initial = await FirebaseMessaging.instance.getInitialMessage();
+    if (initial != null) _openNotifications();
 
     // Token rotation → keep profiles.fcm_token fresh.
     FirebaseMessaging.instance.onTokenRefresh.listen(_saveToken);

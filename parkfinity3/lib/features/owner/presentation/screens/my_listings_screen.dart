@@ -13,11 +13,8 @@ class MyListingsScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final listingsAsync = ref.watch(myListingsProvider);
     return Scaffold(
-      backgroundColor: Colors.grey[100],
       appBar: AppBar(
         title: Text(l10n.myListings, style: const TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.white,
-        elevation: 0,
       ),
       body: listingsAsync.when(
         data: (listings) {
@@ -43,11 +40,8 @@ class MyListingsScreen extends ConsumerWidget {
         error: (err, stack) => Center(child: Text('${l10n.error}: $err')),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          context.push('/add_listing');
-        },
-        backgroundColor: Colors.deepPurple,
-        child: const Icon(Icons.add, color: Colors.white),
+        onPressed: () => context.push('/add_listing'),
+        child: const Icon(Icons.add),
       ),
     );
   }
@@ -78,17 +72,12 @@ class _ListingCardState extends ConsumerState<_ListingCard> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border.all(color: theme.dividerColor),
       ),
       child: Column(
         children: [
@@ -96,7 +85,7 @@ class _ListingCardState extends ConsumerState<_ListingCard> {
           Container(
             height: 120,
             decoration: BoxDecoration(
-              color: Colors.grey[300],
+              color: theme.colorScheme.surfaceContainerHighest,
               borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
               image: widget.listing.photos.isNotEmpty
                   ? DecorationImage(
@@ -106,8 +95,9 @@ class _ListingCardState extends ConsumerState<_ListingCard> {
                   : null,
             ),
             child: widget.listing.photos.isEmpty
-                ? const Center(
-                    child: Icon(Icons.local_parking, size: 40, color: Colors.white))
+                ? Center(
+                    child: Icon(Icons.local_parking,
+                        size: 40, color: theme.hintColor))
                 : null,
           ),
           Padding(
@@ -128,10 +118,10 @@ class _ListingCardState extends ConsumerState<_ListingCard> {
                     ),
                     Text(
                       '৳${widget.listing.hourlyRate?.toInt() ?? 0}/hr',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.deepPurple,
+                        color: theme.colorScheme.primary,
                       ),
                     ),
                   ],
@@ -139,11 +129,15 @@ class _ListingCardState extends ConsumerState<_ListingCard> {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    const Icon(Icons.location_on, size: 16, color: Colors.grey),
+                    Icon(Icons.location_on, size: 16, color: theme.hintColor),
                     const SizedBox(width: 4),
-                    Text(
-                      widget.listing.address,
-                      style: TextStyle(color: Colors.grey[700]),
+                    Expanded(
+                      child: Text(
+                        widget.listing.address,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: theme.hintColor),
+                      ),
                     ),
                   ],
                 ),
@@ -158,9 +152,10 @@ class _ListingCardState extends ConsumerState<_ListingCard> {
                         visualDensity: VisualDensity.compact,
                         label: Text('${e.key}: $avail/${e.value}',
                             style: const TextStyle(fontSize: 12)),
-                        backgroundColor: avail > 0
-                            ? Colors.green.shade50
-                            : Colors.red.shade50,
+                        backgroundColor: (avail > 0
+                                ? Colors.green
+                                : theme.colorScheme.error)
+                            .withValues(alpha: 0.12),
                       );
                     }).toList(),
                   ),
@@ -169,22 +164,27 @@ class _ListingCardState extends ConsumerState<_ListingCard> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        Icon(
-                          _isActive ? Icons.check_circle : Icons.pause_circle_filled,
-                          color: _isActive ? Colors.green : Colors.orange,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          _isActive ? l10n.statusActive : l10n.paused,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
+                    Flexible(
+                      child: Row(
+                        children: [
+                          Icon(
+                            _isActive ? Icons.check_circle : Icons.pause_circle_filled,
                             color: _isActive ? Colors.green : Colors.orange,
+                            size: 20,
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              _isActive ? l10n.statusActive : l10n.paused,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: _isActive ? Colors.green : Colors.orange,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     Row(
                       children: [
@@ -211,12 +211,20 @@ class _ListingCardState extends ConsumerState<_ListingCard> {
                           },
                         ),
                         IconButton(
-                          icon: const Icon(Icons.edit, color: Colors.deepPurple),
+                          tooltip: l10n.spotQrCode,
+                          icon: const Icon(Icons.qr_code_2),
+                          onPressed: () =>
+                              context.push('/listing/qr', extra: widget.listing),
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.edit,
+                              color: theme.colorScheme.primary),
                           onPressed: () => context
                               .push('/edit_listing', extra: widget.listing),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.red),
+                          icon: Icon(Icons.delete,
+                              color: theme.colorScheme.error),
                           onPressed: widget.onDelete,
                         ),
                       ],

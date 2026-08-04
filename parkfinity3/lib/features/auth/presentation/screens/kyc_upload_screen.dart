@@ -118,7 +118,7 @@ class _KycUploadScreenState extends ConsumerState<KycUploadScreen> {
   void _snack(String msg, {bool error = false}) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(msg),
-      backgroundColor: error ? Colors.red : Colors.green,
+      backgroundColor: error ? Theme.of(context).colorScheme.error : Colors.green,
     ));
   }
 
@@ -141,7 +141,7 @@ class _KycUploadScreenState extends ConsumerState<KycUploadScreen> {
               _isOwner
                   ? l10n.kycOwnerIntro
                   : l10n.kycRiderIntro,
-              style: TextStyle(color: Colors.grey[700]),
+              style: TextStyle(color: Theme.of(context).hintColor),
             ),
             const SizedBox(height: 20),
             _DocTile(
@@ -201,11 +201,11 @@ class _KycUploadScreenState extends ConsumerState<KycUploadScreen> {
               onPressed: (_complete && !submitting) ? _submit : null,
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                backgroundColor: Colors.deepPurple,
-                foregroundColor: Colors.white,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
               ),
               child: submitting
-                  ? const CircularProgressIndicator(color: Colors.white)
+                  ? CircularProgressIndicator(color: Theme.of(context).colorScheme.surfaceContainerLow)
                   : Text(l10n.submitContinue, style: const TextStyle(fontSize: 16)),
             ),
             const SizedBox(height: 8),

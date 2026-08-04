@@ -250,10 +250,10 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
     final isLoading = ref.watch(myListingsProvider).isLoading;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
       appBar: AppBar(
         title: Text(l10n.addParkingSpot),
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
         elevation: 0,
       ),
       body: Form(
@@ -275,7 +275,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
                 ],
               ),
               Text(l10n.maxMbPerPhoto(kMaxImageMb.toStringAsFixed(0)),
-                  style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                  style: TextStyle(color: Theme.of(context).hintColor, fontSize: 12)),
               const SizedBox(height: 8),
               _imageFiles.isNotEmpty
                   ? Wrap(
@@ -301,6 +301,8 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
                                         decoration: const BoxDecoration(
                                             color: Colors.black54,
                                             shape: BoxShape.circle),
+                                        // Chrome over a black54 scrim, so white
+                                        // stays correct in both themes.
                                         child: const Icon(Icons.close,
                                             size: 18, color: Colors.white),
                                       ),
@@ -311,7 +313,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
                           .toList(),
                     )
                   : Text(l10n.noPhotosSelected,
-                      style: const TextStyle(color: Colors.grey)),
+                      style: TextStyle(color: Theme.of(context).hintColor)),
               const SizedBox(height: 24),
 
               // Video
@@ -326,12 +328,12 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
                 ],
               ),
               Text(l10n.maxMb(kMaxVideoMb.toStringAsFixed(0)),
-                  style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                  style: TextStyle(color: Theme.of(context).hintColor, fontSize: 12)),
               _videoFile != null
                   ? Text(l10n.videoSelected,
                       style: const TextStyle(color: Colors.green))
                   : Text(l10n.noVideoSelected,
-                      style: const TextStyle(color: Colors.grey)),
+                      style: TextStyle(color: Theme.of(context).hintColor)),
               const SizedBox(height: 32),
 
               // 2. Details
@@ -501,7 +503,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
                 height: 250,
                 decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.grey.shade400)),
+                    border: Border.all(color: Theme.of(context).dividerColor)),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(16),
                   child: Stack(
@@ -517,8 +519,8 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
                         zoomControlsEnabled: false,
                         myLocationButtonEnabled: false,
                       ),
-                      const Icon(Icons.location_on,
-                          size: 48, color: Colors.deepPurple),
+                      Icon(Icons.location_on,
+                          size: 48, color: Theme.of(context).colorScheme.primary),
                     ],
                   ),
                 ),
@@ -529,10 +531,10 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
                 onPressed: isLoading ? null : _submitForm,
                 style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    backgroundColor: Colors.deepPurple,
-                    foregroundColor: Colors.white),
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary),
                 child: isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
+                    ? CircularProgressIndicator(color: Theme.of(context).colorScheme.surfaceContainerLow)
                     : Text(l10n.publishListing,
                         style: const TextStyle(fontSize: 18)),
               ),
