@@ -297,12 +297,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     }
                     return DropdownButtonFormField<String>(
                       initialValue: _selectedVehicleId,
+                      isExpanded: true, // long plate names overflowed the row
                       decoration:
                           const InputDecoration(border: OutlineInputBorder()),
                       hint: Text(l10n.selectYourVehicle),
                       items: vehicles
                           .map((v) => DropdownMenuItem(
-                              value: v.id, child: Text(v.displayName)))
+                              value: v.id,
+                              child: Text(v.displayName,
+                                  overflow: TextOverflow.ellipsis)))
                           .toList(),
                       onChanged: (value) =>
                           setState(() => _selectedVehicleId = value),

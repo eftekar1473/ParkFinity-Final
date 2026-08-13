@@ -50,6 +50,24 @@ class AppLocalizationsEn extends AppLocalizations {
       'Too many sign-up attempts. Please wait a moment and try again.';
 
   @override
+  String get verifyEmailTitle => 'Verify your email';
+
+  @override
+  String verifyEmailBody(String email) {
+    return 'We sent a confirmation link to $email. Click it to activate your account, then log in.';
+  }
+
+  @override
+  String get goToLogin => 'Go to login';
+
+  @override
+  String get resendVerificationEmail => 'Resend verification email';
+
+  @override
+  String get verificationEmailResent =>
+      'Verification email resent. Check your inbox.';
+
+  @override
   String get email => 'Email';
 
   @override
@@ -66,6 +84,47 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noAccountSignUp => 'Don\'t have an account? Sign Up';
+
+  @override
+  String get forgotPassword => 'Forgot password?';
+
+  @override
+  String get resetPasswordTitle => 'Reset your password';
+
+  @override
+  String get resetPasswordSubtitle =>
+      'Enter your account email and we\'ll send you a link to reset your password.';
+
+  @override
+  String get sendResetLink => 'Send reset link';
+
+  @override
+  String get resetLinkSent => 'Reset link sent. Check your inbox.';
+
+  @override
+  String get setNewPasswordTitle => 'Set a new password';
+
+  @override
+  String get setNewPasswordSubtitle =>
+      'Choose a new password for your account.';
+
+  @override
+  String get newPassword => 'New password';
+
+  @override
+  String get confirmPassword => 'Confirm password';
+
+  @override
+  String get passwordsDoNotMatch => 'Passwords do not match.';
+
+  @override
+  String get passwordTooShort => 'Password must be at least 6 characters.';
+
+  @override
+  String get updatePassword => 'Update password';
+
+  @override
+  String get passwordUpdated => 'Password updated. You\'re signed in.';
 
   @override
   String get registerTitle => 'Create an Account';
@@ -518,6 +577,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get whereToPark => 'Where do you want to park?';
+
+  @override
+  String get allListings => 'All parking spots';
+
+  @override
+  String get browseList => 'Browse as list';
 
   @override
   String get locationNotFound =>
@@ -1064,6 +1129,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get qrSaved => 'QR code saved';
+
+  @override
+  String get downloadQr => 'Download QR code';
+
+  @override
+  String get saving => 'Saving…';
+
+  @override
+  String get qrSavedToGallery => 'QR code saved to your gallery';
+
+  @override
+  String get qrSaveFailed => 'Could not save the QR code:';
 
   @override
   String get printAndMountQr =>

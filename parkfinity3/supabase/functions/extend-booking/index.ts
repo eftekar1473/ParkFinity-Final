@@ -75,7 +75,14 @@ serve(async (req) => {
     const { error: payErr } = await supabase.rpc('deduct_funds', {
       user_id_param: rider_id, amount_param: price.total, booking_id_param: booking.id,
     });
-    if (payErr) return json({ error: 'Payment failed: insufficient wallet balance' }, 402);
+    if (payErr) {
+      const msg = payErr.message ?? String(payErr);
+      const insufficient = /insufficient wallet balance/i.test(msg);
+      return json(
+        { error: insufficient ? 'Payment failed: insufficient wallet balance' : `Payment failed: ${msg}` },
+        insufficient ? 402 : 500,
+      );
+    }
 
     // 5. Push end_time + accumulate amounts
     const { data: updated, error: uErr } = await supabase

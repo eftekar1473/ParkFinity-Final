@@ -34,7 +34,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   /// Accepts 01XXXXXXXXX / +8801XXXXXXXXX / 8801XXXXXXXXX.
   static final _bdPhone = RegExp(r'^(?:\+?88)?01[3-9]\d{8}$');
 
-  void _register() {
+  void _register() async {
     final name = _nameController.text.trim();
     final email = _emailController.text.trim();
     final phone = _phoneController.text.trim();
@@ -54,12 +54,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     setState(() => _error = err);
     if (err != null) return;
 
-    ref.read(authControllerProvider.notifier).register(
-          email,
-          password,
-          name,
-          phoneNumber: phone,
-        );
+    final needsVerification =
+        await ref.read(authControllerProvider.notifier).register(
+              email,
+              password,
+              name,
+              phoneNumber: phone,
+            );
+    if (needsVerification && mounted) {
+      context.push('/verify-email', extra: email);
+    }
   }
 
   @override

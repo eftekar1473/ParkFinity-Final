@@ -129,13 +129,22 @@ class NotificationsScreen extends ConsumerWidget {
 
               return InkWell(
                 borderRadius: BorderRadius.circular(12),
-                onTap: () {
+                onTap: () async {
                   if (!isRead) {
                     ref
                         .read(notificationServiceProvider)
                         .markAsRead(notif['id']);
                   }
-                  _open(context, ref, notif);
+                  // A malformed payload or a deleted target must not crash the
+                  // app into the red error screen — degrade to a snackbar.
+                  try {
+                    await _open(context, ref, notif);
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('${l10n.error}: $e')));
+                    }
+                  }
                 },
                 child: Container(
                   padding: const EdgeInsets.all(16),

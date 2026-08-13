@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 // Auth State
 import '../../features/auth/data/auth_repository.dart';
@@ -14,8 +15,11 @@ import 'scaffolds/owner_scaffold.dart';
 import '../../features/auth/presentation/screens/splash_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
+import '../../features/auth/presentation/screens/verify_email_screen.dart';
 import '../../features/auth/presentation/screens/role_selection_screen.dart';
 import '../../features/auth/presentation/screens/kyc_upload_screen.dart';
+import '../../features/auth/presentation/screens/forgot_password_screen.dart';
+import '../../features/auth/presentation/screens/set_new_password_screen.dart';
 
 import '../../features/rider/presentation/screens/explore_map_screen.dart';
 import '../../features/rider/presentation/screens/rider_booking_history_screen.dart';
@@ -24,6 +28,7 @@ import '../../features/rider/presentation/screens/listing_details_screen.dart';
 import '../../features/rider/presentation/screens/checkout_screen.dart';
 import '../../features/rider/presentation/screens/active_parking_screen.dart';
 import '../../features/rider/presentation/screens/smart_recommendations_screen.dart';
+import '../../features/rider/presentation/screens/listings_screen.dart';
 import '../../features/owner/data/models/listing_model.dart';
 
 // Owner Screens
@@ -64,10 +69,26 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       final loc = state.matchedLocation;
 
       // Reachable without a session. Anything else bounces to /login.
-      const publicRoutes = {'/login', '/register', '/splash'};
+      const publicRoutes = {
+        '/login',
+        '/register',
+        '/verify-email',
+        '/forgot-password',
+        '/reset-password',
+        '/splash',
+      };
       final isLoggingIn = loc == '/login' || loc == '/register';
 
       if (authState.isLoading || authState.hasError) return null;
+
+      // A recovery deep link opens a temporary session flagged passwordRecovery.
+      // Send the user to set a new password before the normal home redirect,
+      // and hold them there until they submit (or the event clears).
+      final isRecovery =
+          authState.value?.event == AuthChangeEvent.passwordRecovery;
+      if (isRecovery) {
+        return loc == '/reset-password' ? null : '/reset-password';
+      }
 
       final hasRole = role?.toLowerCase() == 'rider' || role?.toLowerCase() == 'owner';
       final kycOk = kyc == 'verified';
@@ -112,6 +133,19 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/register',
         builder: (context, state) => const RegisterScreen(),
+      ),
+      GoRoute(
+        path: '/verify-email',
+        builder: (context, state) =>
+            VerifyEmailScreen(email: state.extra as String? ?? ''),
+      ),
+      GoRoute(
+        path: '/forgot-password',
+        builder: (context, state) => const ForgotPasswordScreen(),
+      ),
+      GoRoute(
+        path: '/reset-password',
+        builder: (context, state) => const SetNewPasswordScreen(),
       ),
       GoRoute(
         path: '/role_selection',
@@ -200,6 +234,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
                     path: 'recommendations',
                     builder: (context, state) =>
                         const SmartRecommendationsScreen(),
+                  ),
+                  GoRoute(
+                    path: 'listings',
+                    builder: (context, state) => const ListingsScreen(),
                   ),
                 ],
               ),

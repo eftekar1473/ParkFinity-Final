@@ -1,0 +1,7 @@
+{
+  "//": "Supabase edge functions run on Deno. Scope the Deno LSP to the functions folder (nested under parkfinity3) so URL imports and the Deno global resolve; the Flutter/Dart app is left on the Dart analyzer.",
+  "deno.enable": true,
+  "deno.enablePaths": ["parkfinity3/supabase/functions"],
+  "deno.lint": true,
+  "deno.unstable": false
+}

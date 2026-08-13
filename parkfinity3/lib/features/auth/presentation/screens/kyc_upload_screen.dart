@@ -53,8 +53,10 @@ class _KycUploadScreenState extends ConsumerState<KycUploadScreen> {
     DocVerifyResult result;
     switch (slot) {
       case 'nid_front':
-      case 'nid_back':
         result = await svc.verifyNid(file);
+        break;
+      case 'nid_back':
+        result = await svc.verifyNidBack(file);
         break;
       case 'license':
         result = await svc.verifyLicense(file);

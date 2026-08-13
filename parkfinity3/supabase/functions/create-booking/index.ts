@@ -127,7 +127,15 @@ serve(async (req) => {
       await supabase.from('bookings').update({ status: 'Cancelled' }).eq('id', newBooking.id);
       await supabase.rpc('release_slot', { p_listing: listing_id, p_vtype: vehicle_type, p_qty: 1 });
       slotBooked = null;
-      return json({ error: 'Payment failed: insufficient wallet balance' }, 402);
+      // Only the true "not enough balance" case is a 402; every other RPC
+      // failure (missing column, constraint, type error) was previously
+      // mislabelled as "insufficient balance" and hid the real defect.
+      const msg = payErr.message ?? String(payErr);
+      const insufficient = /insufficient wallet balance/i.test(msg);
+      return json(
+        { error: insufficient ? 'Payment failed: insufficient wallet balance' : `Payment failed: ${msg}` },
+        insufficient ? 402 : 500,
+      );
     }
 
     // 7. Notifications (rider + owner). Best-effort.

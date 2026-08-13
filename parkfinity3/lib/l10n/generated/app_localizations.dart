@@ -176,6 +176,36 @@ abstract class AppLocalizations {
   /// **'Too many sign-up attempts. Please wait a moment and try again.'**
   String get tooManySignUpAttempts;
 
+  /// No description provided for @verifyEmailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify your email'**
+  String get verifyEmailTitle;
+
+  /// No description provided for @verifyEmailBody.
+  ///
+  /// In en, this message translates to:
+  /// **'We sent a confirmation link to {email}. Click it to activate your account, then log in.'**
+  String verifyEmailBody(String email);
+
+  /// No description provided for @goToLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to login'**
+  String get goToLogin;
+
+  /// No description provided for @resendVerificationEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend verification email'**
+  String get resendVerificationEmail;
+
+  /// No description provided for @verificationEmailResent.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification email resent. Check your inbox.'**
+  String get verificationEmailResent;
+
   /// No description provided for @email.
   ///
   /// In en, this message translates to:
@@ -211,6 +241,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Don\'t have an account? Sign Up'**
   String get noAccountSignUp;
+
+  /// No description provided for @forgotPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot password?'**
+  String get forgotPassword;
+
+  /// No description provided for @resetPasswordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset your password'**
+  String get resetPasswordTitle;
+
+  /// No description provided for @resetPasswordSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your account email and we\'ll send you a link to reset your password.'**
+  String get resetPasswordSubtitle;
+
+  /// No description provided for @sendResetLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Send reset link'**
+  String get sendResetLink;
+
+  /// No description provided for @resetLinkSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset link sent. Check your inbox.'**
+  String get resetLinkSent;
+
+  /// No description provided for @setNewPasswordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Set a new password'**
+  String get setNewPasswordTitle;
+
+  /// No description provided for @setNewPasswordSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a new password for your account.'**
+  String get setNewPasswordSubtitle;
+
+  /// No description provided for @newPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'New password'**
+  String get newPassword;
+
+  /// No description provided for @confirmPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm password'**
+  String get confirmPassword;
+
+  /// No description provided for @passwordsDoNotMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords do not match.'**
+  String get passwordsDoNotMatch;
+
+  /// No description provided for @passwordTooShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must be at least 6 characters.'**
+  String get passwordTooShort;
+
+  /// No description provided for @updatePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Update password'**
+  String get updatePassword;
+
+  /// No description provided for @passwordUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Password updated. You\'re signed in.'**
+  String get passwordUpdated;
 
   /// No description provided for @registerTitle.
   ///
@@ -1093,6 +1201,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Where do you want to park?'**
   String get whereToPark;
+
+  /// No description provided for @allListings.
+  ///
+  /// In en, this message translates to:
+  /// **'All parking spots'**
+  String get allListings;
+
+  /// No description provided for @browseList.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse as list'**
+  String get browseList;
 
   /// No description provided for @locationNotFound.
   ///
@@ -2065,6 +2185,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'QR code saved'**
   String get qrSaved;
+
+  /// No description provided for @downloadQr.
+  ///
+  /// In en, this message translates to:
+  /// **'Download QR code'**
+  String get downloadQr;
+
+  /// No description provided for @saving.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving…'**
+  String get saving;
+
+  /// No description provided for @qrSavedToGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'QR code saved to your gallery'**
+  String get qrSavedToGallery;
+
+  /// No description provided for @qrSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the QR code:'**
+  String get qrSaveFailed;
 
   /// No description provided for @printAndMountQr.
   ///

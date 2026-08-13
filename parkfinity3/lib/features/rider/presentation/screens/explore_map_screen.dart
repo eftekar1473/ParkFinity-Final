@@ -581,6 +581,20 @@ class _ExploreMapScreenState extends ConsumerState<ExploreMapScreen> {
               ),
             ),
 
+          // Browse-as-list button
+          Positioned(
+            bottom: 168,
+            right: 16,
+            child: FloatingActionButton(
+              heroTag: 'browseList',
+              tooltip: l10n.browseList,
+              backgroundColor: theme.colorScheme.surfaceContainerLow,
+              foregroundColor: theme.colorScheme.primary,
+              onPressed: () => context.push('/rider/explore/listings'),
+              child: const Icon(Icons.view_list),
+            ),
+          ),
+
           // Ask AI button
           Positioned(
             bottom: 100,

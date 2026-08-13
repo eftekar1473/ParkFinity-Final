@@ -30,6 +30,15 @@ class DocumentVerificationService {
     'ID NO', 'NID NO',
   ];
 
+  // The BACK of a BD NID carries no "National ID" title and no photo — it has
+  // an address block, blood group, issue date, and a barcode/QR. Front-side
+  // keyword matching wrongly rejects it. These are the back-side signals.
+  static const _nidBackKeywords = [
+    'ADDRESS', 'BLOOD', 'GROUP', 'PLACE OF BIRTH', 'ISSUE', 'DATE',
+    'REPUBLIC', 'BANGLADESH', 'GOVERNMENT', 'POST OFFICE', 'HOLDING',
+    'ঠিকানা', 'রক্ত', 'গ্রুপ', 'জন্মস্থান', 'বাংলাদেশ', 'সরকার', 'ডাকঘর',
+  ];
+
   static const _licenseKeywords = [
     'DRIVING', 'DRIVER', 'LICENCE', 'LICENSE', 'DL NO', 'BRTA',
     'MOTOR', 'VEHICLE', 'CLASS',
@@ -72,6 +81,30 @@ class DocumentVerificationService {
           ? const DocVerifyResult(true, '')
           : const DocVerifyResult(false,
               'This does not look like a National ID card. Please upload a clear photo of your NID.');
+    } catch (e) {
+      return DocVerifyResult(false, 'Could not read the image. Please try another photo. ($e)');
+    }
+  }
+
+  /// Verify the BACK of an NID. The back has no photo and no "National ID"
+  /// title, so it is checked leniently: it must simply read like the reverse of
+  /// a government card (address / blood group / issue date / barcode text),
+  /// which still rejects a selfie, a car, or blank scenery.
+  Future<DocVerifyResult> verifyNidBack(File imageFile) async {
+    try {
+      final text = await _extractText(imageFile);
+      if (text.trim().length < 15) {
+        return const DocVerifyResult(false,
+            'This does not look like the back of an NID. No text was detected — please capture the back of the card clearly in good light.');
+      }
+      final hits = _keywordHits(text, _nidBackKeywords);
+      // Accept on any back-side keyword, OR a long id/barcode number, OR simply
+      // a text-dense card (the back is mostly an address paragraph).
+      final ok = hits >= 1 || _hasIdNumber(text) || text.trim().length >= 40;
+      return ok
+          ? const DocVerifyResult(true, '')
+          : const DocVerifyResult(false,
+              'This does not look like the back of a National ID card. Please upload a clear photo of the back of your NID.');
     } catch (e) {
       return DocVerifyResult(false, 'Could not read the image. Please try another photo. ($e)');
     }

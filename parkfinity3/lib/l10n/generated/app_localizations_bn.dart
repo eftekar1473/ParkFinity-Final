@@ -50,6 +50,24 @@ class AppLocalizationsBn extends AppLocalizations {
       'অনেকবার সাইন আপ চেষ্টা করা হয়েছে। একটু অপেক্ষা করে আবার চেষ্টা করুন।';
 
   @override
+  String get verifyEmailTitle => 'আপনার ইমেইল যাচাই করুন';
+
+  @override
+  String verifyEmailBody(String email) {
+    return '$email-এ একটি নিশ্চিতকরণ লিংক পাঠানো হয়েছে। অ্যাকাউন্ট চালু করতে লিংকে ক্লিক করুন, তারপর লগইন করুন।';
+  }
+
+  @override
+  String get goToLogin => 'লগইনে যান';
+
+  @override
+  String get resendVerificationEmail => 'যাচাই ইমেইল আবার পাঠান';
+
+  @override
+  String get verificationEmailResent =>
+      'যাচাই ইমেইল আবার পাঠানো হয়েছে। আপনার ইনবক্স দেখুন।';
+
+  @override
   String get email => 'ইমেইল';
 
   @override
@@ -66,6 +84,48 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get noAccountSignUp => 'অ্যাকাউন্ট নেই? সাইন আপ করুন';
+
+  @override
+  String get forgotPassword => 'পাসওয়ার্ড ভুলে গেছেন?';
+
+  @override
+  String get resetPasswordTitle => 'পাসওয়ার্ড রিসেট করুন';
+
+  @override
+  String get resetPasswordSubtitle =>
+      'আপনার অ্যাকাউন্টের ইমেইল দিন, আমরা পাসওয়ার্ড রিসেট করার লিংক পাঠাব।';
+
+  @override
+  String get sendResetLink => 'রিসেট লিংক পাঠান';
+
+  @override
+  String get resetLinkSent => 'রিসেট লিংক পাঠানো হয়েছে। ইনবক্স দেখুন।';
+
+  @override
+  String get setNewPasswordTitle => 'নতুন পাসওয়ার্ড দিন';
+
+  @override
+  String get setNewPasswordSubtitle =>
+      'আপনার অ্যাকাউন্টের জন্য নতুন পাসওয়ার্ড বেছে নিন।';
+
+  @override
+  String get newPassword => 'নতুন পাসওয়ার্ড';
+
+  @override
+  String get confirmPassword => 'পাসওয়ার্ড নিশ্চিত করুন';
+
+  @override
+  String get passwordsDoNotMatch => 'পাসওয়ার্ড মিলছে না।';
+
+  @override
+  String get passwordTooShort => 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।';
+
+  @override
+  String get updatePassword => 'পাসওয়ার্ড হালনাগাদ করুন';
+
+  @override
+  String get passwordUpdated =>
+      'পাসওয়ার্ড হালনাগাদ হয়েছে। আপনি লগইন অবস্থায় আছেন।';
 
   @override
   String get registerTitle => 'অ্যাকাউন্ট তৈরি করুন';
@@ -521,6 +581,12 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get whereToPark => 'আপনি কোথায় পার্ক করতে চান?';
+
+  @override
+  String get allListings => 'সব পার্কিং স্পট';
+
+  @override
+  String get browseList => 'তালিকা হিসেবে দেখুন';
 
   @override
   String get locationNotFound =>
@@ -1067,6 +1133,18 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get qrSaved => 'QR কোড সেভ হয়েছে';
+
+  @override
+  String get downloadQr => 'QR কোড ডাউনলোড করুন';
+
+  @override
+  String get saving => 'সেভ হচ্ছে…';
+
+  @override
+  String get qrSavedToGallery => 'QR কোড আপনার গ্যালারিতে সেভ হয়েছে';
+
+  @override
+  String get qrSaveFailed => 'QR কোড সেভ করা যায়নি:';
 
   @override
   String get printAndMountQr =>

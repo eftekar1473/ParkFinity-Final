@@ -53,9 +53,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
-          child: Column(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: MediaQuery.of(context).size.height -
+                  MediaQuery.of(context).padding.vertical,
+            ),
+            child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -91,7 +96,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   prefixIcon: const Icon(Icons.lock),
                 ),
               ),
-              const SizedBox(height: 24),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () => context.push('/forgot-password'),
+                  child: Text(l10n.forgotPassword),
+                ),
+              ),
+              const SizedBox(height: 8),
               ElevatedButton(
                 onPressed: authState.isLoading ? null : _login,
                 style: ElevatedButton.styleFrom(
@@ -131,6 +143,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 child: Text(l10n.noAccountSignUp),
               ),
             ],
+          ),
           ),
         ),
       ),

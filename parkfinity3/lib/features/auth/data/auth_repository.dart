@@ -12,6 +12,12 @@ final authStateChangesProvider = StreamProvider<AuthState>((ref) {
   return ref.watch(authRepositoryProvider).authStateChanges;
 });
 
+/// Deep link Supabase redirects back to after the user clicks an email link
+/// (confirmation or password recovery). Registered as an intent-filter in
+/// AndroidManifest.xml; must match the redirect URLs allow-list in the
+/// Supabase dashboard (Authentication → URL Configuration).
+const String kAuthRedirect = 'io.supabase.parkfinity://login-callback/';
+
 class AuthRepository {
   final GoTrueClient _auth;
 
@@ -39,6 +45,9 @@ class AuthRepository {
     final res = await _auth.signUp(
       email: email,
       password: password,
+      // Clicking the confirmation link returns the user to the app, not a
+      // browser dead-end.
+      emailRedirectTo: kAuthRedirect,
       // handle_new_user() reads these to build the profiles row.
       data: {
         'full_name': fullName,
@@ -46,7 +55,12 @@ class AuthRepository {
           'phone_number': phoneNumber.trim(),
       },
     );
-    await PushService.instance.registerToken();
+    // With email confirmation ON, signUp returns no session until the user
+    // clicks the link, so there is no auth to attach a push token to yet.
+    // Registering the token happens on the first real login instead.
+    if (res.session != null) {
+      await PushService.instance.registerToken();
+    }
     return res;
   }
 
@@ -116,6 +130,18 @@ class AuthRepository {
           .update({column: url})
           .eq('id', user.id);
     }
+  }
+
+  /// Sends a password-recovery email. The link deep-links back into the app,
+  /// where onAuthStateChange fires a `passwordRecovery` event and the router
+  /// sends the user to the reset screen.
+  Future<void> sendPasswordResetEmail(String email) async {
+    await _auth.resetPasswordForEmail(email, redirectTo: kAuthRedirect);
+  }
+
+  /// Sets a new password for the recovery session established by the deep link.
+  Future<void> updatePassword(String newPassword) async {
+    await _auth.updateUser(UserAttributes(password: newPassword));
   }
 
   Future<void> signOut() async {

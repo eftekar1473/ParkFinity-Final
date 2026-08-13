@@ -21,17 +21,39 @@ class AuthController extends AsyncNotifier<void> {
     state = await AsyncValue.guard(() => _authRepository.signInWithEmailAndPassword(email, password));
   }
 
-  Future<void> register(String email, String password, String fullName,
+  /// Returns true when a confirmation email was sent (no session yet), false
+  /// when the user is signed in immediately (email confirmation disabled).
+  Future<bool> register(String email, String password, String fullName,
       {String? phoneNumber}) async {
     state = const AsyncLoading();
-    state = await AsyncValue.guard(() =>
+    final res = await AsyncValue.guard(() =>
         _authRepository.signUpWithEmailAndPassword(email, password, fullName,
             phoneNumber: phoneNumber));
+    state = res.whenData((_) {});
+    return res.value?.session == null && !res.hasError;
   }
 
   Future<void> signInWithGoogle() async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() => _authRepository.signInWithGoogle());
+  }
+
+  /// Returns true when the recovery email was sent without error.
+  Future<bool> sendPasswordReset(String email) async {
+    state = const AsyncLoading();
+    final res = await AsyncValue.guard(
+        () => _authRepository.sendPasswordResetEmail(email));
+    state = res;
+    return !res.hasError;
+  }
+
+  /// Returns true when the password was updated for the recovery session.
+  Future<bool> updatePassword(String newPassword) async {
+    state = const AsyncLoading();
+    final res = await AsyncValue.guard(
+        () => _authRepository.updatePassword(newPassword));
+    state = res;
+    return !res.hasError;
   }
 
   Future<void> updateRole(String role) async {

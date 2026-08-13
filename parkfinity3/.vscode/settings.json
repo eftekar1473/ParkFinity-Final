@@ -1,0 +1,7 @@
+{
+  "//": "Supabase edge functions run on Deno, not Node. Scope the Deno LSP to the functions folder so URL imports and the Deno global resolve, while the Flutter/Dart app is left alone.",
+  "deno.enable": true,
+  "deno.enablePaths": ["supabase/functions"],
+  "deno.lint": true,
+  "deno.unstable": false
+}
