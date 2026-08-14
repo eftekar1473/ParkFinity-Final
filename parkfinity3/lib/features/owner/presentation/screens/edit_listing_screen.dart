@@ -1,12 +1,16 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../data/models/listing_model.dart';
 import '../controllers/listings_controller.dart';
+import '../../../parking/data/places_repository.dart';
 import '../../../../core/data/repositories/storage_repository.dart';
 import '../../../../l10n/generated/app_localizations.dart';
 import '../widgets/listing_form_fields.dart';
@@ -33,6 +37,13 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
   late final TextEditingController _weeklyRateController;
   late final TextEditingController _monthlyRateController;
   late final TextEditingController _yearlyRateController;
+
+  final _searchController = TextEditingController();
+  final _searchFocus = FocusNode();
+  Timer? _debounce;
+  List<PlaceSuggestion> _suggestions = const [];
+  bool _searching = false;
+  bool _locating = false;
 
   late Map<String, int> _slotCapacity;
   late Map<String, dynamic> _schedule;
@@ -79,6 +90,23 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
     _existingPhotos = List<String>.from(l.photos);
   }
 
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _searchFocus.dispose();
+    _titleController.dispose();
+    _descController.dispose();
+    _addressController.dispose();
+    _hourlyRateController.dispose();
+    _dailyRateController.dispose();
+    _weeklyRateController.dispose();
+    _monthlyRateController.dispose();
+    _yearlyRateController.dispose();
+    _searchController.dispose();
+    _mapController?.dispose();
+    super.dispose();
+  }
+
   Future<void> _pickImages() async {
     final imgs = await _picker.pickMultiImage();
     for (final img in imgs) {
@@ -106,6 +134,108 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
   void _snack(String m) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
+  }
+
+  // -------------------- Location Search & Autocomplete --------------------
+
+  void _onSearchQueryChanged(String value) {
+    _debounce?.cancel();
+    if (value.trim().length < 2) {
+      setState(() {
+        _suggestions = const [];
+        _searching = false;
+      });
+      return;
+    }
+    setState(() => _searching = true);
+    _debounce = Timer(const Duration(milliseconds: 350), () => _fetchSuggestions(value));
+  }
+
+  Future<void> _fetchSuggestions(String value) async {
+    final results = await ref.read(placesRepositoryProvider).autocomplete(
+          value,
+          lat: _selectedLocation.latitude,
+          lng: _selectedLocation.longitude,
+        );
+    if (!mounted || _searchController.text.trim() != value.trim()) return;
+    setState(() {
+      _suggestions = results;
+      _searching = false;
+    });
+  }
+
+  Future<void> _chooseSuggestion(PlaceSuggestion s) async {
+    _searchFocus.unfocus();
+    setState(() {
+      _suggestions = const [];
+      _searching = true;
+    });
+
+    final loc = await ref.read(placesRepositoryProvider).resolve(s);
+    if (!mounted) return;
+    setState(() => _searching = false);
+
+    if (loc == null) {
+      _snack(AppLocalizations.of(context).locationNotFound);
+      return;
+    }
+
+    _searchController.text = s.title;
+    final target = LatLng(loc.lat, loc.lng);
+    setState(() {
+      _selectedLocation = target;
+      if (_addressController.text.isEmpty || _addressController.text.trim() == s.title) {
+        _addressController.text = loc.address.isNotEmpty ? loc.address : s.title;
+      }
+    });
+
+    _mapController?.animateCamera(CameraUpdate.newLatLngZoom(target, 16));
+  }
+
+  void _clearSearch() {
+    _searchController.clear();
+    setState(() {
+      _suggestions = const [];
+      _searching = false;
+    });
+  }
+
+  Future<void> _useMyLocation() async {
+    setState(() => _locating = true);
+    try {
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        if (mounted) _snack(AppLocalizations.of(context).locationPermissionDenied);
+        return;
+      }
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission != LocationPermission.always && permission != LocationPermission.whileInUse) {
+        if (mounted) _snack(AppLocalizations.of(context).locationPermissionDenied);
+        return;
+      }
+      final pos = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+      );
+      final target = LatLng(pos.latitude, pos.longitude);
+      setState(() => _selectedLocation = target);
+      _mapController?.animateCamera(CameraUpdate.newLatLngZoom(target, 17));
+
+      try {
+        final placemarks = await Geocoding().placemarkFromCoordinates(pos.latitude, pos.longitude);
+        if (placemarks.isNotEmpty && _addressController.text.isEmpty) {
+          final p = placemarks.first;
+          _addressController.text = [p.street, p.subLocality, p.locality]
+              .where((e) => (e ?? '').isNotEmpty)
+              .join(', ');
+        }
+      } catch (_) {}
+    } catch (e) {
+      if (mounted) _snack(AppLocalizations.of(context).couldNotGetLocation('$e'));
+    } finally {
+      if (mounted) setState(() => _locating = false);
+    }
   }
 
   Future<void> _save() async {
@@ -171,8 +301,9 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
       );
 
       await ref.read(myListingsProvider.notifier).editListing(updated);
+
       if (mounted) {
-        _snack('Listing updated.');
+        _snack('Listing updated');
         context.pop();
       }
     } catch (e) {
@@ -183,60 +314,66 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
   }
 
   @override
-  void dispose() {
-    _titleController.dispose();
-    _descController.dispose();
-    _addressController.dispose();
-    _hourlyRateController.dispose();
-    _dailyRateController.dispose();
-    _weeklyRateController.dispose();
-    _monthlyRateController.dispose();
-    _yearlyRateController.dispose();
-    _mapController?.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
-      appBar: AppBar(title: Text(l10n.editListing), elevation: 0),
+      appBar: AppBar(
+        title: Text(l10n.editListing),
+        backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
+      ),
       body: Form(
         key: _formKey,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Photos (existing + new)
-              Text(l10n.photos,
+              Text(l10n.spotPhotosMin3,
                   style:
                       const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
+              Text(
+                '${_existingPhotos.length + _newImages.length} photos selected (min 3)',
+                style: TextStyle(color: Theme.of(context).hintColor),
+              ),
+              const SizedBox(height: 12),
               Wrap(
-                spacing: 8,
-                runSpacing: 8,
+                spacing: 12,
+                runSpacing: 12,
                 children: [
-                  ..._existingPhotos.map((url) => _thumb(
-                        Image.network(url,
-                            width: 90, height: 90, fit: BoxFit.cover),
-                        onRemove: () =>
-                            setState(() => _existingPhotos.remove(url)),
-                      )),
-                  ..._newImages.map((f) => _thumb(
-                        Image.file(f, width: 90, height: 90, fit: BoxFit.cover),
-                        onRemove: () => setState(() => _newImages.remove(f)),
-                      )),
-                  GestureDetector(
+                  for (int i = 0; i < _existingPhotos.length; i++)
+                    _thumb(
+                      Image.network(_existingPhotos[i],
+                          width: 90, height: 90, fit: BoxFit.cover),
+                      onRemove: () =>
+                          setState(() => _existingPhotos.removeAt(i)),
+                    ),
+                  for (int i = 0; i < _newImages.length; i++)
+                    _thumb(
+                      Image.file(_newImages[i],
+                          width: 90, height: 90, fit: BoxFit.cover),
+                      onRemove: () => setState(() => _newImages.removeAt(i)),
+                    ),
+                  InkWell(
                     onTap: _pickImages,
                     child: Container(
                       width: 90,
                       height: 90,
                       decoration: BoxDecoration(
-                          border: Border.all(color: Theme.of(context).dividerColor),
-                          borderRadius: BorderRadius.circular(8)),
-                      child: const Icon(Icons.add_a_photo),
+                        border: Border.all(color: Theme.of(context).dividerColor),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.add_a_photo,
+                              color: Theme.of(context).colorScheme.primary),
+                          const SizedBox(height: 4),
+                          Text(l10n.addPhotos, style: const TextStyle(fontSize: 11)),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -246,30 +383,36 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
                 onPressed: _pickVideo,
                 icon: const Icon(Icons.videocam),
                 label: Text(_newVideo != null
-                    ? 'New video selected'
+                    ? 'New video selected (${(_newVideo!.lengthSync() / (1024 * 1024)).toStringAsFixed(1)} MB)'
                     : 'Replace video (optional)'),
               ),
               const SizedBox(height: 24),
 
+              Text(l10n.spotDetails,
+                  style:
+                      const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _titleController,
-                decoration: const InputDecoration(
-                    labelText: 'Title', border: OutlineInputBorder()),
-                validator: (v) => v!.isEmpty ? 'Required' : null,
+                decoration: InputDecoration(
+                    labelText: l10n.title, border: const OutlineInputBorder()),
+                validator: (v) => v!.isEmpty ? l10n.required : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _descController,
                 maxLines: 3,
-                decoration: const InputDecoration(
-                    labelText: 'Description', border: OutlineInputBorder()),
+                decoration: InputDecoration(
+                    labelText: l10n.description,
+                    border: const OutlineInputBorder()),
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _addressController,
-                decoration: const InputDecoration(
-                    labelText: 'Address', border: OutlineInputBorder()),
-                validator: (v) => v!.isEmpty ? 'Required' : null,
+                decoration: InputDecoration(
+                    labelText: l10n.address,
+                    border: const OutlineInputBorder()),
+                validator: (v) => v!.isEmpty ? l10n.required : null,
               ),
               const SizedBox(height: 24),
 
@@ -370,10 +513,83 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
               ),
               const SizedBox(height: 24),
 
+              // Map & Autocomplete
               Text(l10n.location,
                   style:
                       const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
+              TextField(
+                controller: _searchController,
+                focusNode: _searchFocus,
+                onChanged: _onSearchQueryChanged,
+                textInputAction: TextInputAction.search,
+                decoration: InputDecoration(
+                  hintText: l10n.searchLocationHint,
+                  border: const OutlineInputBorder(),
+                  isDense: true,
+                  prefixIcon: _searching
+                      ? const Padding(
+                          padding: EdgeInsets.all(12),
+                          child: SizedBox(
+                              height: 16,
+                              width: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2)),
+                        )
+                      : const Icon(Icons.search),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, size: 20),
+                          onPressed: _clearSearch,
+                        )
+                      : null,
+                ),
+              ),
+              if (_suggestions.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Material(
+                  elevation: 4,
+                  borderRadius: BorderRadius.circular(12),
+                  color: Theme.of(context).cardColor,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 220),
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      padding: EdgeInsets.zero,
+                      itemCount: _suggestions.length,
+                      separatorBuilder: (_, _) => const Divider(height: 1),
+                      itemBuilder: (context, i) {
+                        final s = _suggestions[i];
+                        return ListTile(
+                          dense: true,
+                          leading: Icon(Icons.place_outlined,
+                              color: Theme.of(context).colorScheme.primary, size: 20),
+                          title: Text(s.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontWeight: FontWeight.w600)),
+                          subtitle: s.subtitle.isNotEmpty
+                              ? Text(s.subtitle,
+                                  maxLines: 1, overflow: TextOverflow.ellipsis)
+                              : null,
+                          onTap: () => _chooseSuggestion(s),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: _locating ? null : _useMyLocation,
+                icon: _locating
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Icon(Icons.my_location),
+                label: Text(l10n.useMyLocation),
+              ),
+              const SizedBox(height: 16),
               SizedBox(
                 height: 220,
                 child: ClipRRect(

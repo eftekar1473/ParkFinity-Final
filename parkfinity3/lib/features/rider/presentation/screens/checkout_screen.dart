@@ -1,5 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_sslcommerz/model/SSLCCustomerInfoInitializer.dart';
+import 'package:flutter_sslcommerz/model/SSLCEMITransactionInitializer.dart';
+import 'package:flutter_sslcommerz/model/SSLCSdkType.dart';
+import 'package:flutter_sslcommerz/model/SSLCTransactionInfoModel.dart';
+import 'package:flutter_sslcommerz/model/SSLCommerzInitialization.dart';
+import 'package:flutter_sslcommerz/model/SSLCurrencyType.dart';
+import 'package:flutter_sslcommerz/sslcommerz.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
@@ -9,6 +17,7 @@ import '../../../parking/data/availability_repository.dart';
 import '../controllers/bookings_controller.dart';
 import '../controllers/vehicles_controller.dart';
 import '../../../auth/data/auth_repository.dart';
+import '../../../shared/data/my_profile_repository.dart';
 import '../../../wallet/presentation/controllers/wallet_provider.dart';
 import '../../../../l10n/generated/app_localizations.dart';
 
@@ -53,12 +62,22 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   double get _baseRate {
     switch (_durationType) {
-      case 'Hourly': return widget.listing.hourlyRate ?? 0.0;
-      case 'Daily': return widget.listing.dailyRate ?? ((widget.listing.hourlyRate ?? 0) * 12);
-      case 'Weekly': return widget.listing.weeklyRate ?? ((widget.listing.dailyRate ?? 0) * 7);
-      case 'Monthly': return widget.listing.monthlyRate ?? ((widget.listing.weeklyRate ?? 0) * 4);
-      case 'Yearly': return widget.listing.yearlyRate ?? ((widget.listing.monthlyRate ?? 0) * 12);
-      default: return 0.0;
+      case 'Hourly':
+        return widget.listing.hourlyRate ?? 0.0;
+      case 'Daily':
+        return widget.listing.dailyRate ??
+            ((widget.listing.hourlyRate ?? 0) * 12);
+      case 'Weekly':
+        return widget.listing.weeklyRate ??
+            ((widget.listing.dailyRate ?? 0) * 7);
+      case 'Monthly':
+        return widget.listing.monthlyRate ??
+            ((widget.listing.weeklyRate ?? 0) * 4);
+      case 'Yearly':
+        return widget.listing.yearlyRate ??
+            ((widget.listing.monthlyRate ?? 0) * 12);
+      default:
+        return 0.0;
     }
   }
 
@@ -297,22 +316,36 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     }
                     return DropdownButtonFormField<String>(
                       initialValue: _selectedVehicleId,
-                      isExpanded: true, // long plate names overflowed the row
-                      decoration:
-                          const InputDecoration(border: OutlineInputBorder()),
-                      hint: Text(l10n.selectYourVehicle),
-                      items: vehicles
-                          .map((v) => DropdownMenuItem(
-                              value: v.id,
-                              child: Text(v.displayName,
-                                  overflow: TextOverflow.ellipsis)))
-                          .toList(),
-                      onChanged: (value) =>
-                          setState(() => _selectedVehicleId = value),
+                      isExpanded: true,
+                      decoration: InputDecoration(
+                        labelText: l10n.selectYourVehicle,
+                        border: const OutlineInputBorder(),
+                      ),
+                      items: vehicles.map((v) {
+                        final isAllowed =
+                            widget.listing.allowedVehicleTypes.contains(v.type);
+                        return DropdownMenuItem(
+                          value: v.id,
+                          enabled: isAllowed,
+                          child: Text(
+                            '${v.model} (${v.licensePlate}) - ${v.type}${isAllowed ? '' : ' (${l10n.vehicleNotAllowed(v.type)})'}',
+                            style: TextStyle(
+                              color: isAllowed ? null : theme.disabledColor,
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (val) =>
+                          setState(() => _selectedVehicleId = val),
                     );
                   },
-                  loading: () => const CircularProgressIndicator(),
-                  error: (e, st) => Text('${l10n.error}: $e'),
+                  loading: () => const Center(
+                      child: Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: CircularProgressIndicator(),
+                  )),
+                  error: (e, _) => Text(l10n.somethingWentWrong,
+                      style: TextStyle(color: theme.colorScheme.error)),
                 );
               },
             ),
@@ -398,8 +431,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             const SizedBox(height: 32),
 
             FilledButton(
-              // Blocked while a scan of this window says zero, so the rider
-              // isn't sent into a guaranteed 409 from the server.
               onPressed: (_submitting || avail == 0) ? null : _confirm,
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
@@ -410,7 +441,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   ? const SizedBox(
                       height: 20,
                       width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2))
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white))
                   : Text(
                       l10n.payAmount(currencyFormatter.format(_totalPrice)),
                       style: const TextStyle(fontSize: 18)),
@@ -450,13 +482,80 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       return;
     }
 
-    if (_selectedPaymentMethod != 'wallet') {
-      messenger.showSnackBar(SnackBar(content: Text(l10n.sslUnderConstruction)));
-      return;
-    }
-
     final user = ref.read(authStateChangesProvider).value?.session?.user;
     if (user == null) return;
+
+    if (_selectedPaymentMethod == 'sslcommerz') {
+      setState(() => _submitting = true);
+      try {
+        final profile = ref.read(currentProfileProvider).value;
+        final storeId = dotenv.env['SSLCOMMERZ_STORE_ID'] ?? 'your_store_id';
+        final storePass =
+            dotenv.env['SSLCOMMERZ_STORE_PASSWD'] ?? 'your_store_passwd';
+        final txnId = "BOOKING_${DateTime.now().millisecondsSinceEpoch}";
+
+        final sslcommerz = Sslcommerz(
+          initializer: SSLCommerzInitialization(
+            multi_card_name: 'internetbank',
+            currency: SSLCurrencyType.BDT,
+            product_category: 'ParkingBooking',
+            sdkType: SSLCSdkType.TESTBOX,
+            store_id: storeId,
+            store_passwd: storePass,
+            total_amount: _totalPrice,
+            tran_id: txnId,
+          ),
+        );
+
+        sslcommerz.addCustomerInfoInitializer(
+          customerInfoInitializer: SSLCCustomerInfoInitializer(
+            customerName: profile?.fullName ?? 'Parkfinity User',
+            customerEmail: profile?.email ?? 'user@parkfinity.com',
+            customerAddress1: 'Dhaka',
+            customerCity: 'Dhaka',
+            customerState: 'Dhaka',
+            customerPostCode: '1000',
+            customerCountry: 'Bangladesh',
+            customerPhone: profile?.phoneNumber ?? '01700000000',
+          ),
+        );
+
+        sslcommerz.addEMITransactionInitializer(
+            sslcemiTransactionInitializer:
+                SSLCEMITransactionInitializer(emi_options: 0));
+
+        final SSLCTransactionInfoModel result = await sslcommerz.payNow();
+        if (!mounted) return;
+        final status = result.status?.toUpperCase();
+
+        if (status == 'VALID' || status == 'VALIDATED') {
+          final valId = result.valId;
+          final credited = valId == null
+              ? false
+              : await ref
+                  .read(walletControllerProvider.notifier)
+                  .creditTopUp(valId);
+          if (!credited) {
+            messenger.showSnackBar(SnackBar(content: Text(l10n.paymentFailed)));
+            return;
+          }
+          ref.invalidate(currentProfileProvider);
+          ref.invalidate(walletControllerProvider);
+        } else if (status == 'FAILED') {
+          messenger.showSnackBar(SnackBar(content: Text(l10n.paymentFailed)));
+          return;
+        } else {
+          messenger.showSnackBar(SnackBar(content: Text(l10n.paymentCancelled)));
+          return;
+        }
+      } catch (e) {
+        if (!mounted) return;
+        messenger.showSnackBar(SnackBar(content: Text('${l10n.paymentError}: $e')));
+        return;
+      } finally {
+        if (mounted) setState(() => _submitting = false);
+      }
+    }
 
     setState(() => _submitting = true);
     final router = GoRouter.of(context);

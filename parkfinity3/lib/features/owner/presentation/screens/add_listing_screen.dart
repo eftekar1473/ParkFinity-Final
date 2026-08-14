@@ -1,15 +1,17 @@
-import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'dart:async';
 import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
-
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:image_picker/image_picker.dart';
+
 import '../../data/models/listing_model.dart';
 import '../controllers/listings_controller.dart';
 import '../../../auth/data/auth_repository.dart';
+import '../../../parking/data/places_repository.dart';
 import '../../../../core/data/repositories/storage_repository.dart';
 import '../widgets/listing_form_fields.dart';
 import '../../../../l10n/generated/app_localizations.dart';
@@ -29,10 +31,16 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
   File? _videoFile;
   final ImagePicker _picker = ImagePicker();
 
-  // Location
+  // Location & Autocomplete
   LatLng _selectedLocation = const LatLng(23.8103, 90.4125); // Default Dhaka
   GoogleMapController? _mapController;
   final _searchController = TextEditingController();
+  final _searchFocus = FocusNode();
+  Timer? _debounce;
+  List<PlaceSuggestion> _suggestions = const [];
+  bool _searching = false;
+  bool _locating = false;
+  bool _submitting = false;
 
   // Amenities
   bool _hasCCTV = false;
@@ -56,8 +64,6 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
   final Map<String, int> _slotCapacity = {'Car': 1};
   Map<String, dynamic> _schedule = defaultWeeklySchedule();
   String _bookingMode = 'instant';
-
-  bool _locating = false;
 
   Future<void> _pickImages() async {
     final l10n = AppLocalizations.of(context);
@@ -90,21 +96,68 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
     setState(() => _videoFile = file);
   }
 
-  Future<void> _searchLocation() async {
-    if (_searchController.text.isEmpty) return;
-    try {
-      final locations =
-          await Geocoding().locationFromAddress(_searchController.text);
-      if (locations.isNotEmpty) {
-        final target =
-            LatLng(locations.first.latitude, locations.first.longitude);
-        setState(() => _selectedLocation = target);
-        _mapController?.animateCamera(CameraUpdate.newLatLng(target));
-      }
-    } catch (e) {
-      if (!mounted) return;
-      _snack(AppLocalizations.of(context).locationNotFound);
+  // -------------------- Location Search & Autocomplete --------------------
+
+  void _onSearchQueryChanged(String value) {
+    _debounce?.cancel();
+    if (value.trim().length < 2) {
+      setState(() {
+        _suggestions = const [];
+        _searching = false;
+      });
+      return;
     }
+    setState(() => _searching = true);
+    _debounce = Timer(const Duration(milliseconds: 350), () => _fetchSuggestions(value));
+  }
+
+  Future<void> _fetchSuggestions(String value) async {
+    final results = await ref.read(placesRepositoryProvider).autocomplete(
+          value,
+          lat: _selectedLocation.latitude,
+          lng: _selectedLocation.longitude,
+        );
+    if (!mounted || _searchController.text.trim() != value.trim()) return;
+    setState(() {
+      _suggestions = results;
+      _searching = false;
+    });
+  }
+
+  Future<void> _chooseSuggestion(PlaceSuggestion s) async {
+    _searchFocus.unfocus();
+    setState(() {
+      _suggestions = const [];
+      _searching = true;
+    });
+
+    final loc = await ref.read(placesRepositoryProvider).resolve(s);
+    if (!mounted) return;
+    setState(() => _searching = false);
+
+    if (loc == null) {
+      _snack(AppLocalizations.of(context).locationNotFound);
+      return;
+    }
+
+    _searchController.text = s.title;
+    final target = LatLng(loc.lat, loc.lng);
+    setState(() {
+      _selectedLocation = target;
+      if (_addressController.text.isEmpty || _addressController.text.trim() == s.title) {
+        _addressController.text = loc.address.isNotEmpty ? loc.address : s.title;
+      }
+    });
+
+    _mapController?.animateCamera(CameraUpdate.newLatLngZoom(target, 16));
+  }
+
+  void _clearSearch() {
+    _searchController.clear();
+    setState(() {
+      _suggestions = const [];
+      _searching = false;
+    });
   }
 
   Future<void> _useMyLocation() async {
@@ -165,10 +218,6 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
       _snack(l10n.min3Photos);
       return;
     }
-    if (_videoFile == null) {
-      _snack(l10n.selectOneVideo);
-      return;
-    }
     if (_slotCapacity.isEmpty || _slotCapacity.values.every((v) => v <= 0)) {
       _snack(l10n.addVehicleTypeSlot);
       return;
@@ -177,6 +226,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
     final user = ref.read(authStateChangesProvider).value?.session?.user;
     if (user == null) return;
 
+    setState(() => _submitting = true);
     try {
       final storageRepo = ref.read(storageRepositoryProvider);
       _snack(l10n.uploadingMedia);
@@ -185,8 +235,11 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
       for (final file in _imageFiles) {
         photoUrls.add(await storageRepo.uploadImage(file, 'listings', user.id));
       }
-      final videoUrl =
-          await storageRepo.uploadImage(_videoFile!, 'listings_video', user.id);
+
+      String? videoUrl;
+      if (_videoFile != null) {
+        videoUrl = await storageRepo.uploadImage(_videoFile!, 'listings_video', user.id);
+      }
 
       final cleanCap = <String, int>{
         for (final e in _slotCapacity.entries)
@@ -225,12 +278,16 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
         context.pop();
       }
     } catch (e) {
-      _snack(l10n.failedUpload('$e'));
+      if (mounted) _snack(l10n.failedUpload('$e'));
+    } finally {
+      if (mounted) setState(() => _submitting = false);
     }
   }
 
   @override
   void dispose() {
+    _debounce?.cancel();
+    _searchFocus.dispose();
     _titleController.dispose();
     _descController.dispose();
     _addressController.dispose();
@@ -247,7 +304,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final isLoading = ref.watch(myListingsProvider).isLoading;
+    final isBusy = _submitting || ref.watch(myListingsProvider).isLoading;
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
@@ -264,76 +321,80 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // 1. Photos
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              Text(l10n.spotPhotosMin3,
+                  style:
+                      const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              if (_imageFiles.isEmpty) ...[
+                const SizedBox(height: 8),
+                Text(l10n.noPhotosSelected,
+                    style: TextStyle(color: Theme.of(context).hintColor)),
+              ],
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
                 children: [
-                  Text(l10n.spotPhotosMin3,
-                      style: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold)),
-                  TextButton(
-                      onPressed: _pickImages, child: Text(l10n.addPhotos)),
+                  for (int i = 0; i < _imageFiles.length; i++)
+                    Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.file(_imageFiles[i],
+                              width: 90, height: 90, fit: BoxFit.cover),
+                        ),
+                        Positioned(
+                          top: 2,
+                          right: 2,
+                          child: GestureDetector(
+                            onTap: () =>
+                                setState(() => _imageFiles.removeAt(i)),
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                  color: Colors.black54,
+                                  shape: BoxShape.circle),
+                              child: const Icon(Icons.close,
+                                  size: 18, color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  InkWell(
+                    onTap: _pickImages,
+                    child: Container(
+                      width: 90,
+                      height: 90,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Theme.of(context).dividerColor),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.add_a_photo,
+                              color: Theme.of(context).colorScheme.primary),
+                          const SizedBox(height: 4),
+                          Text(l10n.addPhotos, style: const TextStyle(fontSize: 11)),
+                        ],
+                      ),
+                    ),
+                  ),
                 ],
               ),
-              Text(l10n.maxMbPerPhoto(kMaxImageMb.toStringAsFixed(0)),
-                  style: TextStyle(color: Theme.of(context).hintColor, fontSize: 12)),
-              const SizedBox(height: 8),
-              _imageFiles.isNotEmpty
-                  ? Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: _imageFiles
-                          .map((file) => Stack(
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: Image.file(file,
-                                        width: 100,
-                                        height: 100,
-                                        fit: BoxFit.cover),
-                                  ),
-                                  Positioned(
-                                    right: 0,
-                                    top: 0,
-                                    child: GestureDetector(
-                                      onTap: () => setState(
-                                          () => _imageFiles.remove(file)),
-                                      child: Container(
-                                        decoration: const BoxDecoration(
-                                            color: Colors.black54,
-                                            shape: BoxShape.circle),
-                                        // Chrome over a black54 scrim, so white
-                                        // stays correct in both themes.
-                                        child: const Icon(Icons.close,
-                                            size: 18, color: Colors.white),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ))
-                          .toList(),
-                    )
-                  : Text(l10n.noPhotosSelected,
-                      style: TextStyle(color: Theme.of(context).hintColor)),
               const SizedBox(height: 24),
 
               // Video
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(l10n.spotVideoRequired,
-                      style: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold)),
-                  TextButton(
-                      onPressed: _pickVideo, child: Text(l10n.addVideo)),
-                ],
+              Text(l10n.spotVideoRequired,
+                  style:
+                      const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: _pickVideo,
+                icon: const Icon(Icons.videocam),
+                label: Text(_videoFile != null
+                    ? '${l10n.videoSelected} (${(_videoFile!.lengthSync() / (1024 * 1024)).toStringAsFixed(1)} MB)'
+                    : l10n.addVideo),
               ),
-              Text(l10n.maxMb(kMaxVideoMb.toStringAsFixed(0)),
-                  style: TextStyle(color: Theme.of(context).hintColor, fontSize: 12)),
-              _videoFile != null
-                  ? Text(l10n.videoSelected,
-                      style: const TextStyle(color: Colors.green))
-                  : Text(l10n.noVideoSelected,
-                      style: TextStyle(color: Theme.of(context).hintColor)),
               const SizedBox(height: 32),
 
               // 2. Details
@@ -353,7 +414,6 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
                 maxLines: 3,
                 decoration: InputDecoration(
                     labelText: l10n.description, border: const OutlineInputBorder()),
-                validator: (v) => v!.isEmpty ? l10n.required : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -468,25 +528,71 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
               ),
               const SizedBox(height: 32),
 
-              // 8. Map
+              // 8. Map & Location Autocomplete
               Text(l10n.exactLocation,
                   style:
                       const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
-              Row(children: [
-                Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    decoration: InputDecoration(
-                        hintText: l10n.searchLocationHint,
-                        border: const OutlineInputBorder(),
-                        isDense: true),
+              TextField(
+                controller: _searchController,
+                focusNode: _searchFocus,
+                onChanged: _onSearchQueryChanged,
+                textInputAction: TextInputAction.search,
+                decoration: InputDecoration(
+                  hintText: l10n.searchLocationHint,
+                  border: const OutlineInputBorder(),
+                  isDense: true,
+                  prefixIcon: _searching
+                      ? const Padding(
+                          padding: EdgeInsets.all(12),
+                          child: SizedBox(
+                              height: 16,
+                              width: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2)),
+                        )
+                      : const Icon(Icons.search),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, size: 20),
+                          onPressed: _clearSearch,
+                        )
+                      : null,
+                ),
+              ),
+              if (_suggestions.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Material(
+                  elevation: 4,
+                  borderRadius: BorderRadius.circular(12),
+                  color: Theme.of(context).cardColor,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 220),
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      padding: EdgeInsets.zero,
+                      itemCount: _suggestions.length,
+                      separatorBuilder: (_, _) => const Divider(height: 1),
+                      itemBuilder: (context, i) {
+                        final s = _suggestions[i];
+                        return ListTile(
+                          dense: true,
+                          leading: Icon(Icons.place_outlined,
+                              color: Theme.of(context).colorScheme.primary, size: 20),
+                          title: Text(s.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontWeight: FontWeight.w600)),
+                          subtitle: s.subtitle.isNotEmpty
+                              ? Text(s.subtitle,
+                                  maxLines: 1, overflow: TextOverflow.ellipsis)
+                              : null,
+                          onTap: () => _chooseSuggestion(s),
+                        );
+                      },
+                    ),
                   ),
                 ),
-                IconButton(
-                    icon: const Icon(Icons.search),
-                    onPressed: _searchLocation),
-              ]),
+              ],
               const SizedBox(height: 8),
               OutlinedButton.icon(
                 onPressed: _locating ? null : _useMyLocation,
@@ -528,13 +634,18 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
               const SizedBox(height: 48),
 
               ElevatedButton(
-                onPressed: isLoading ? null : _submitForm,
+                onPressed: isBusy ? null : _submitForm,
                 style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     backgroundColor: Theme.of(context).colorScheme.primary,
                     foregroundColor: Theme.of(context).colorScheme.onPrimary),
-                child: isLoading
-                    ? CircularProgressIndicator(color: Theme.of(context).colorScheme.surfaceContainerLow)
+                child: isBusy
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2.5, color: Colors.white),
+                      )
                     : Text(l10n.publishListing,
                         style: const TextStyle(fontSize: 18)),
               ),

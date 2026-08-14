@@ -47,46 +47,62 @@ class MyListingsController extends AsyncNotifier<List<ListingModel>> {
 
   Future<void> addListing(ListingModel listing) async {
     state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
+    try {
       final repository = ref.read(listingsRepositoryProvider);
       await repository.createListing(listing);
       
       // Invalidate the public provider so Riders see the new listing
       ref.invalidate(allActiveListingsProvider);
       
-      return _fetchMyListings();
-    });
+      final updated = await _fetchMyListings();
+      state = AsyncValue.data(updated);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      rethrow;
+    }
   }
 
   Future<void> editListing(ListingModel listing) async {
     state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
+    try {
       final repository = ref.read(listingsRepositoryProvider);
       await repository.updateListing(listing);
 
       ref.invalidate(allActiveListingsProvider);
-      return _fetchMyListings();
-    });
+      final updated = await _fetchMyListings();
+      state = AsyncValue.data(updated);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      rethrow;
+    }
   }
 
   Future<void> updateListingStatus(String id, bool isActive) async {
-    state = await AsyncValue.guard(() async {
+    try {
       final repository = ref.read(listingsRepositoryProvider);
       await repository.updateListingStatus(id, isActive);
       
       ref.invalidate(allActiveListingsProvider);
-      return _fetchMyListings();
-    });
+      final updated = await _fetchMyListings();
+      state = AsyncValue.data(updated);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      rethrow;
+    }
   }
 
   Future<void> deleteListing(String id) async {
     state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
+    try {
       final repository = ref.read(listingsRepositoryProvider);
       await repository.deleteListing(id);
       
       ref.invalidate(allActiveListingsProvider);
-      return _fetchMyListings();
-    });
+      final updated = await _fetchMyListings();
+      state = AsyncValue.data(updated);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      rethrow;
+    }
   }
 }
