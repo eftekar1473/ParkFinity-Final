@@ -58,6 +58,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "88683294038-nnf2pejebocb4r4atqfn29j0np4atf0r.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.parkfinity.parkfinity",
+            "certificate_hash": "dcd97c2597c2c9951f87f256a4f992e62fd76169"
+          }
+        },
+        {
           "client_id": "88683294038-sdphq36r04leeg6nc6l4koa9o2rg1hq4.apps.googleusercontent.com",
           "client_type": 3
         }

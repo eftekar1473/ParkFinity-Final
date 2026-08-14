@@ -28,8 +28,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       // Router handles the redirect
     } catch (e) {
       if (mounted) {
+        String message = e.toString();
+        // Strip the 'Exception: ' prefix for cleaner display.
+        if (message.startsWith('Exception: ')) {
+          message = message.substring('Exception: '.length);
+        }
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+          SnackBar(content: Text(message), backgroundColor: Colors.red),
         );
       }
     } finally {

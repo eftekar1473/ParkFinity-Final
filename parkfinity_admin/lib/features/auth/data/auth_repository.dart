@@ -18,16 +18,47 @@ class AuthRepository {
   User? get currentUser => _supabase.auth.currentUser;
 
   Future<void> signInWithEmail(String email, String password) async {
-    final response = await _supabase.auth.signInWithPassword(
-      email: email,
-      password: password,
-    );
-    
-    // Check if the user is an admin
-    final role = response.user?.userMetadata?['role'] as String?;
+    late final AuthResponse response;
+    try {
+      response = await _supabase.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
+    } on AuthException catch (e) {
+      // Surface Supabase auth errors with clear messages.
+      if (e.message.toLowerCase().contains('invalid login credentials') ||
+          e.message.toLowerCase().contains('invalid_credentials')) {
+        throw Exception('Invalid email or password. Please try again.');
+      }
+      if (e.message.toLowerCase().contains('email not confirmed')) {
+        throw Exception(
+            'Your email is not confirmed. Please check your inbox '
+            'and click the verification link, then try again.');
+      }
+      throw Exception(e.message);
+    }
+
+    // Check role from user_metadata first.
+    String? role = response.user?.userMetadata?['role'] as String?;
+
+    // Fallback: check the profiles table if user_metadata doesn't have a role.
+    if (role == null || role.trim().isEmpty) {
+      try {
+        final profile = await _supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', response.user!.id)
+            .maybeSingle();
+        role = profile?['role'] as String?;
+      } catch (_) {
+        // If the profiles query fails, proceed with null role.
+      }
+    }
+
     if (role?.toLowerCase() != 'admin') {
       await _supabase.auth.signOut();
-      throw Exception('Unauthorized: You must be an Admin to access this panel.');
+      throw Exception(
+          'Access denied. Only Admin accounts can access this panel.');
     }
   }
 

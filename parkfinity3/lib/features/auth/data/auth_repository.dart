@@ -87,7 +87,18 @@ class AuthRepository {
     // which is what made the picker appear and then do nothing.
     await googleSignIn.signOut();
 
-    final googleUser = await googleSignIn.signIn();
+    final GoogleSignInAccount? googleUser;
+    try {
+      googleUser = await googleSignIn.signIn();
+    } catch (e) {
+      // PlatformException(sign_in_failed, ..., 10, ...) means SHA-1 mismatch.
+      final msg = e.toString();
+      if (msg.contains('10:') || msg.contains('sign_in_failed')) {
+        throw const AuthException(
+            'Google Sign-In failed. Please try again later or use email login.');
+      }
+      rethrow;
+    }
     if (googleUser == null) {
       throw const AuthException('Google sign-in was cancelled.');
     }
