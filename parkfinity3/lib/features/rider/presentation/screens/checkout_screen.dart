@@ -457,6 +457,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   Future<void> _confirm() async {
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
+    final router = GoRouter.of(context);
 
     if (_selectedVehicleId == null) {
       messenger.showSnackBar(SnackBar(content: Text(l10n.selectVehicleFirst)));
@@ -558,7 +559,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     }
 
     setState(() => _submitting = true);
-    final router = GoRouter.of(context);
     try {
       await ref.read(bookingsControllerProvider.notifier).createBooking(
             BookingRequest(
@@ -573,7 +573,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           );
       ref.invalidate(walletControllerProvider);
       messenger.showSnackBar(SnackBar(content: Text(l10n.bookingConfirmed)));
-      router.push('/rider/explore/active');
+      router.push('/active_session');
     } catch (e) {
       messenger.showSnackBar(SnackBar(
           content: Text(e.toString().replaceAll('Exception:', '').trim())));

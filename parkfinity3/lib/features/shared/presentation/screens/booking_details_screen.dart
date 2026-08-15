@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -122,6 +123,24 @@ class BookingDetailsScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 24),
+
+          if (!asOwner &&
+              (booking.status == 'Active' ||
+                  booking.status == 'Confirmed' ||
+                  booking.status == 'Pending') &&
+              booking.endTime.isAfter(DateTime.now())) ...[
+            FilledButton.icon(
+              onPressed: () => context.push('/active_session'),
+              icon: const Icon(Icons.timer_outlined),
+              label: Text(l10n.activeSession),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
 
           Row(
             children: [

@@ -248,7 +248,13 @@ class _ActiveParkingScreenState extends ConsumerState<ActiveParkingScreen> {
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.close),
-          onPressed: () => context.go('/rider/explore'),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            } else {
+              context.go('/rider/explore');
+            }
+          },
         ),
       ),
       body: SafeArea(
@@ -260,9 +266,11 @@ class _ActiveParkingScreenState extends ConsumerState<ActiveParkingScreen> {
             final now = DateTime.now();
             const liveStatuses = {'Confirmed', 'Active', 'Pending'};
             final activeBookings = bookings
-                .where((b) => liveStatuses.contains(b.status) && b.endTime.isAfter(now))
+                .where((b) =>
+                    liveStatuses.contains(b.status) &&
+                    b.endTime.isAfter(now))
                 .toList();
-            
+
             if (activeBookings.isEmpty) {
               return Center(
                 child: Column(
@@ -275,7 +283,13 @@ class _ActiveParkingScreenState extends ConsumerState<ActiveParkingScreen> {
                         style: TextStyle(fontSize: 20, color: theme.hintColor)),
                     const SizedBox(height: 16),
                     ElevatedButton(
-                      onPressed: () => context.go('/rider/explore'),
+                      onPressed: () {
+                        if (Navigator.canPop(context)) {
+                          Navigator.pop(context);
+                        } else {
+                          context.go('/rider/explore');
+                        }
+                      },
                       child: Text(l10n.findParkingBtn),
                     ),
                   ],
@@ -284,9 +298,9 @@ class _ActiveParkingScreenState extends ConsumerState<ActiveParkingScreen> {
             }
 
             final booking = activeBookings.first;
-            
-            // Only update timer state if we switched to a new booking
-            if (_activeBooking?.id != booking.id) {
+
+            // Update timer state if switched or not running
+            if (_activeBooking?.id != booking.id || _timer == null || !_timer!.isActive) {
               _activeBooking = booking;
               _totalSeconds = booking.endTime.difference(booking.startTime).inSeconds;
               if (_totalSeconds <= 0) _totalSeconds = 1;

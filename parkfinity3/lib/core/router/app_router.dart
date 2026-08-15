@@ -204,6 +204,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         ),
       ),
 
+      GoRoute(
+        path: '/active_session',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const ActiveParkingScreen(),
+      ),
+
       // ==========================================
       // RIDER NAVIGATION SHELL
       // ==========================================

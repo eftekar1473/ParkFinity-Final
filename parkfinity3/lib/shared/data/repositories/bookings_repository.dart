@@ -34,7 +34,7 @@ class BookingRequest {
         'vehicle_type': vehicleType,
         'duration_type': durationType,
         'duration_count': durationCount,
-        if (startTime != null) 'start_time': startTime!.toIso8601String(),
+        if (startTime != null) 'start_time': startTime!.toUtc().toIso8601String(),
       };
 }
 

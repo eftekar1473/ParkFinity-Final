@@ -10,6 +10,7 @@ import '../../../owner/presentation/controllers/listings_controller.dart';
 import '../../../parking/data/places_repository.dart';
 import '../../data/ai_recommendation_service.dart';
 import '../../data/models/listing_filter.dart';
+import '../controllers/rider_bookings_provider.dart';
 import '../controllers/rider_history_provider.dart';
 import '../widgets/filter_sheet.dart';
 import '../../../owner/data/models/listing_model.dart';
@@ -620,6 +621,72 @@ class _ExploreMapScreenState extends ConsumerState<ExploreMapScreen> {
               onPressed: _goToCurrentLocation,
               child: const Icon(Icons.my_location),
             ),
+          ),
+
+          // Active Session floating banner
+          Consumer(
+            builder: (context, ref, _) {
+              final riderBookings = ref.watch(riderBookingsProvider).value ?? [];
+              const liveStatuses = {'Pending', 'Confirmed', 'Active'};
+              final liveBooking = riderBookings
+                  .where((b) =>
+                      liveStatuses.contains(b.status) &&
+                      b.endTime.isAfter(DateTime.now()))
+                  .firstOrNull;
+              if (liveBooking == null) return const SizedBox.shrink();
+
+              return Positioned(
+                bottom: 32,
+                left: 16,
+                right: 88,
+                child: Material(
+                  elevation: 6,
+                  borderRadius: BorderRadius.circular(16),
+                  color: Colors.green.shade700,
+                  child: InkWell(
+                    onTap: () => context.push('/active_session'),
+                    borderRadius: BorderRadius.circular(16),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.timer, color: Colors.white, size: 22),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  l10n.activeSession,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                Text(
+                                  liveBooking.listing?.title ?? l10n.parkingSpot,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.arrow_forward_ios,
+                              color: Colors.white70, size: 14),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
         ],
       ),

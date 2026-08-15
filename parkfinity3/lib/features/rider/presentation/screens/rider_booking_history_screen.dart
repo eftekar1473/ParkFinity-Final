@@ -92,13 +92,22 @@ class _List extends ConsumerWidget {
           final canReview = b.status == 'Completed' &&
               b.id != null &&
               !reviewed.contains(b.id);
+          const liveStatuses = {'Pending', 'Confirmed', 'Active'};
+          final isLive = liveStatuses.contains(b.status) &&
+              b.endTime.isAfter(DateTime.now());
 
           return Padding(
             padding: const EdgeInsets.only(bottom: 16.0),
             child: BookingCard(
               booking: b,
               money: money,
-              onTap: () => context.push('/booking', extra: b),
+              onTap: () {
+                if (isLive) {
+                  context.push('/active_session');
+                } else {
+                  context.push('/booking', extra: b);
+                }
+              },
               onReview: canReview
                   ? () async {
                       final ok = await ReviewSheet.show(
