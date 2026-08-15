@@ -2,11 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-// Single-call metrics via the admin_overview() RPC (admin-guarded, server-side).
-final dashboardMetricsProvider = FutureProvider<Map<String, dynamic>>((ref) async {
+// Stream metrics via the admin_overview() RPC (admin-guarded, server-side). Polls every 5s.
+final dashboardMetricsProvider = StreamProvider<Map<String, dynamic>>((ref) async* {
   final supabase = Supabase.instance.client;
   final res = await supabase.rpc('admin_overview');
-  return Map<String, dynamic>.from(res as Map);
+  yield Map<String, dynamic>.from(res as Map);
+
+  await for (final _ in Stream.periodic(const Duration(seconds: 5))) {
+    final res = await supabase.rpc('admin_overview');
+    yield Map<String, dynamic>.from(res as Map);
+  }
 });
 
 String _money(dynamic v) => '৳${(v as num?)?.toStringAsFixed(2) ?? '0.00'}';

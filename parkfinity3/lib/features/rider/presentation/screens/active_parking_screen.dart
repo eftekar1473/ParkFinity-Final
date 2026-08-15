@@ -264,11 +264,9 @@ class _ActiveParkingScreenState extends ConsumerState<ActiveParkingScreen> {
           data: (bookings) {
             // Find an active booking (Confirmed/Active/Pending, still running)
             final now = DateTime.now();
-            const liveStatuses = {'Confirmed', 'Active', 'Pending'};
+            const liveStatuses = {'Confirmed', 'Active', 'Pending', 'Overstayed'};
             final activeBookings = bookings
-                .where((b) =>
-                    liveStatuses.contains(b.status) &&
-                    b.endTime.isAfter(now))
+                .where((b) => liveStatuses.contains(b.status))
                 .toList();
 
             if (activeBookings.isEmpty) {
@@ -435,14 +433,14 @@ class _ActiveParkingScreenState extends ConsumerState<ActiveParkingScreen> {
                 child: FilledButton.icon(
                   onPressed: () => _scan(
                     booking,
-                    booking.checkedInAt == null
-                        ? ScanMode.checkIn
-                        : ScanMode.checkOut,
+                    (booking.status == 'Active' || booking.status == 'Overstayed')
+                        ? ScanMode.checkOut
+                        : ScanMode.checkIn,
                   ),
                   icon: const Icon(Icons.qr_code_scanner),
-                  label: Text(booking.checkedInAt == null
-                      ? l10n.checkIn
-                      : l10n.checkOut),
+                  label: Text((booking.status == 'Active' || booking.status == 'Overstayed')
+                      ? l10n.checkOut
+                      : l10n.checkIn),
                   style: FilledButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(

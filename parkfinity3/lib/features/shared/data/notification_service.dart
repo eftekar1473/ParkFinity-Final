@@ -6,15 +6,21 @@ final notificationServiceProvider = Provider<NotificationService>((ref) {
 });
 
 // Stream of unread notification count
-final unreadNotificationCountProvider = StreamProvider.family<int, String>((ref, userId) {
+final unreadNotificationCountProvider = StreamProvider.family.autoDispose<int, String>((ref, userId) async* {
   final service = ref.watch(notificationServiceProvider);
-  return service.getUnreadCountStream(userId);
+  yield await service.getUnreadCount(userId);
+  await for (final _ in Stream.periodic(const Duration(seconds: 10))) {
+    yield await service.getUnreadCount(userId);
+  }
 });
 
 // Stream of all notifications for a user
-final notificationsProvider = StreamProvider.family<List<Map<String, dynamic>>, String>((ref, userId) {
+final notificationsProvider = StreamProvider.family.autoDispose<List<Map<String, dynamic>>, String>((ref, userId) async* {
   final service = ref.watch(notificationServiceProvider);
-  return service.getNotificationsStream(userId);
+  yield await service.getNotifications(userId);
+  await for (final _ in Stream.periodic(const Duration(seconds: 10))) {
+    yield await service.getNotifications(userId);
+  }
 });
 
 class NotificationService {
@@ -22,23 +28,22 @@ class NotificationService {
 
   NotificationService(this._client);
 
-  Stream<int> getUnreadCountStream(String userId) {
-    // .stream() allows only one .eq(); filter is_read in the mapper.
-    return _client
+  Future<int> getUnreadCount(String userId) async {
+    final response = await _client
         .from('notifications')
-        .stream(primaryKey: ['id'])
+        .select('id')
         .eq('user_id', userId)
-        .map((events) =>
-            events.where((e) => e['is_read'] == false).length);
+        .eq('is_read', false);
+    return (response as List).length;
   }
 
-  Stream<List<Map<String, dynamic>>> getNotificationsStream(String userId) {
-    return _client
+  Future<List<Map<String, dynamic>>> getNotifications(String userId) async {
+    final response = await _client
         .from('notifications')
-        .stream(primaryKey: ['id'])
+        .select()
         .eq('user_id', userId)
-        .order('created_at', ascending: false)
-        .map((events) => events.cast<Map<String, dynamic>>());
+        .order('created_at', ascending: false);
+    return (response as List).cast<Map<String, dynamic>>().toList();
   }
 
   Future<void> markAsRead(String notificationId) async {

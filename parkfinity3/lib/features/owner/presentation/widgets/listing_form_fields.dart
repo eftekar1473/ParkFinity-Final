@@ -12,7 +12,7 @@ const List<String> kVehicleTypes = [
   'Motorcycle',
   'SUV',
   'Pickup',
-  'Van',
+  'Microbus',
   'Bicycle',
 ];
 

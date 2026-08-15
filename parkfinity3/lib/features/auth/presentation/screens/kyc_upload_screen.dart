@@ -27,6 +27,7 @@ class _KycUploadScreenState extends ConsumerState<KycUploadScreen> {
   File? _nidFront;
   File? _nidBack;
   File? _license;
+  File? _licenseBack;
   final List<File> _propertyDocs = [];
 
   bool _busy = false; // running an ML Kit check on a just-picked image
@@ -38,7 +39,7 @@ class _KycUploadScreenState extends ConsumerState<KycUploadScreen> {
       'owner';
 
   Future<void> _pickAndVerify({
-    required String slot, // 'nid_front' | 'nid_back' | 'license' | 'property'
+    required String slot, // 'nid_front' | 'nid_back' | 'license' | 'license_back' | 'property'
   }) async {
     final XFile? picked = await _picker.pickImage(
       source: ImageSource.camera, // force a live capture, not an old gallery pic
@@ -60,6 +61,9 @@ class _KycUploadScreenState extends ConsumerState<KycUploadScreen> {
         break;
       case 'license':
         result = await svc.verifyLicense(file);
+        break;
+      case 'license_back':
+        result = await svc.verifyLicenseBack(file);
         break;
       default:
         result = await svc.verifyPropertyDoc(file);
@@ -83,6 +87,9 @@ class _KycUploadScreenState extends ConsumerState<KycUploadScreen> {
         case 'license':
           _license = file;
           break;
+        case 'license_back':
+          _licenseBack = file;
+          break;
         default:
           _propertyDocs.add(file);
       }
@@ -91,7 +98,7 @@ class _KycUploadScreenState extends ConsumerState<KycUploadScreen> {
 
   bool get _complete {
     if (_nidFront == null || _nidBack == null) return false;
-    return _isOwner ? _propertyDocs.isNotEmpty : _license != null;
+    return _isOwner ? _propertyDocs.isNotEmpty : (_license != null && _licenseBack != null);
   }
 
   Future<void> _submit() async {
@@ -99,6 +106,7 @@ class _KycUploadScreenState extends ConsumerState<KycUploadScreen> {
           nidFront: _nidFront!,
           nidBack: _nidBack!,
           licenseFile: _isOwner ? null : _license,
+          licenseBackFile: _isOwner ? null : _licenseBack,
           propertyDocs: _isOwner ? _propertyDocs : const [],
         );
     final state = ref.read(authControllerProvider);
@@ -160,15 +168,22 @@ class _KycUploadScreenState extends ConsumerState<KycUploadScreen> {
               tapText: l10n.tapToCapture,
               onTap: () => _pickAndVerify(slot: 'nid_back'),
             ),
-            if (!_isOwner)
+            if (!_isOwner) ...[
               _DocTile(
                 label: l10n.drivingLicense,
                 file: _license,
                 capturedText: l10n.captured,
                 tapText: l10n.tapToCapture,
                 onTap: () => _pickAndVerify(slot: 'license'),
-              )
-            else ...[
+              ),
+              _DocTile(
+                label: 'Driving License (Back)',
+                file: _licenseBack,
+                capturedText: l10n.captured,
+                tapText: l10n.tapToCapture,
+                onTap: () => _pickAndVerify(slot: 'license_back'),
+              ),
+            ] else ...[
               for (var i = 0; i < _propertyDocs.length; i++)
                 _DocTile(
                   label: '${l10n.propertyDocument} ${i + 1}',

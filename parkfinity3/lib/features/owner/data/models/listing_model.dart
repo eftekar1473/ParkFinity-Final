@@ -28,6 +28,7 @@ class ListingModel {
   final String bookingMode;
 
   final bool isActive;
+  final bool isSuspended;
   final List<String> photos;
   final String? videoUrl;
 
@@ -66,6 +67,7 @@ class ListingModel {
     this.availabilitySchedule,
     this.bookingMode = 'instant',
     this.isActive = true,
+    this.isSuspended = false,
     this.photos = const [],
     this.videoUrl,
     this.qrToken,
@@ -123,6 +125,7 @@ class ListingModel {
       bookingMode: (json['booking_mode'] as String?) ??
           ((json['instant_booking'] as bool? ?? true) ? 'instant' : 'manual'),
       isActive: json['is_active'] as bool? ?? true,
+      isSuspended: json['is_suspended'] as bool? ?? false,
       photos: (json['photos'] as List?)?.map((e) => e.toString()).toList() ?? [],
       videoUrl: json['video_url'] as String?,
       qrToken: json['qr_token'] as String?,
@@ -166,6 +169,7 @@ class ListingModel {
       'booking_mode': bookingMode,
       'instant_booking': instantBooking,
       'is_active': isActive,
+      'is_suspended': isSuspended,
       'photos': photos,
       if (videoUrl != null) 'video_url': videoUrl,
       if (contactPhone != null) 'contact_phone': contactPhone,
@@ -193,6 +197,7 @@ class ListingModel {
     Map<String, dynamic>? availabilitySchedule,
     String? bookingMode,
     bool? isActive,
+    bool? isSuspended,
     List<String>? photos,
     String? videoUrl,
     String? contactPhone,
@@ -220,6 +225,7 @@ class ListingModel {
       availabilitySchedule: availabilitySchedule ?? this.availabilitySchedule,
       bookingMode: bookingMode ?? this.bookingMode,
       isActive: isActive ?? this.isActive,
+      isSuspended: isSuspended ?? this.isSuspended,
       photos: photos ?? this.photos,
       videoUrl: videoUrl ?? this.videoUrl,
       // QR identity is server-owned; carry it through untouched.

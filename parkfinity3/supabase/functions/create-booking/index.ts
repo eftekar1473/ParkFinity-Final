@@ -56,7 +56,7 @@ serve(async (req) => {
     // 1. Listing + rates + slot maps
     const { data: listing, error: lErr } = await supabase
       .from('listings')
-      .select('is_active, booking_mode, hourly_rate, daily_rate, weekly_rate, monthly_rate, yearly_rate, slot_capacity, slot_available')
+      .select('is_active, instant_booking, hourly_rate, daily_rate, weekly_rate, monthly_rate, yearly_rate, slot_capacity, slot_available')
       .eq('id', listing_id)
       .single();
     if (lErr || !listing) throw new Error('Listing not found');
@@ -102,7 +102,7 @@ serve(async (req) => {
     slotBooked = { listing: listing_id, vtype: vehicle_type, qty: 1 };
 
     // 5. Insert booking (manual mode stays Pending owner-approval; instant -> Confirmed)
-    const status = listing.booking_mode === 'manual' ? 'Pending' : 'Confirmed';
+    const status = listing.instant_booking === false ? 'Pending' : 'Confirmed';
     const { data: newBooking, error: insErr } = await supabase
       .from('bookings')
       .insert({

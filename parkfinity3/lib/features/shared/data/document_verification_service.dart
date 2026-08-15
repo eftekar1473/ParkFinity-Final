@@ -130,6 +130,20 @@ class DocumentVerificationService {
     }
   }
 
+  /// Verify the BACK of a driving license (lenient).
+  Future<DocVerifyResult> verifyLicenseBack(File imageFile) async {
+    try {
+      final text = await _extractText(imageFile);
+      if (text.trim().length < 15) {
+        return const DocVerifyResult(false,
+            'This does not look like the back of a license. No text was detected.');
+      }
+      return const DocVerifyResult(true, '');
+    } catch (e) {
+      return DocVerifyResult(false, 'Could not read the image. Please try another photo. ($e)');
+    }
+  }
+
   /// Property documents are varied (deeds, utility bills, ownership papers).
   /// We only require that the image contains a meaningful amount of text, so a
   /// random selfie/scenery is rejected but any genuine document passes.

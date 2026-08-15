@@ -25,83 +25,55 @@ final activeListingsStreamProvider =
           .toList());
 });
 
-// Provider for owner's own listings
-final myListingsProvider = AsyncNotifierProvider<MyListingsController, List<ListingModel>>(
-  MyListingsController.new,
-);
+final myListingsProvider = StreamProvider<List<ListingModel>>((ref) {
+  final authState = ref.watch(authStateChangesProvider);
+  final user = authState.value?.session?.user;
+  if (user == null) return Stream.value([]);
+  
+  return Supabase.instance.client
+      .from('listings')
+      .stream(primaryKey: ['id'])
+      .eq('owner_id', user.id)
+      .map((rows) {
+        final list = rows.map((e) => ListingModel.fromJson(e)).toList();
+        list.sort((a, b) => (b.createdAt ?? DateTime(0)).compareTo(a.createdAt ?? DateTime(0)));
+        return list;
+      });
+});
 
-class MyListingsController extends AsyncNotifier<List<ListingModel>> {
-  @override
-  Future<List<ListingModel>> build() async {
-    return _fetchMyListings();
-  }
+final myListingsControllerProvider = Provider<MyListingsController>((ref) => MyListingsController(ref));
 
-  Future<List<ListingModel>> _fetchMyListings() async {
-    final authState = ref.watch(authStateChangesProvider);
-    final user = authState.value?.session?.user;
-    if (user == null) return [];
-
-    final repository = ref.watch(listingsRepositoryProvider);
-    return repository.getOwnerListings(user.id);
-  }
+class MyListingsController {
+  final Ref ref;
+  MyListingsController(this.ref);
 
   Future<void> addListing(ListingModel listing) async {
-    state = const AsyncValue.loading();
-    try {
-      final repository = ref.read(listingsRepositoryProvider);
-      await repository.createListing(listing);
-      
-      // Invalidate the public provider so Riders see the new listing
-      ref.invalidate(allActiveListingsProvider);
-      
-      final updated = await _fetchMyListings();
-      state = AsyncValue.data(updated);
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
-      rethrow;
-    }
+    final repository = ref.read(listingsRepositoryProvider);
+    await repository.createListing(listing);
+    ref.invalidate(allActiveListingsProvider);
   }
 
   Future<void> editListing(ListingModel listing) async {
-    state = const AsyncValue.loading();
-    try {
-      final repository = ref.read(listingsRepositoryProvider);
-      await repository.updateListing(listing);
-
-      ref.invalidate(allActiveListingsProvider);
-      final updated = await _fetchMyListings();
-      state = AsyncValue.data(updated);
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
-      rethrow;
-    }
+    final repository = ref.read(listingsRepositoryProvider);
+    await repository.updateListing(listing);
+    ref.invalidate(allActiveListingsProvider);
   }
 
   Future<void> updateListingStatus(String id, bool isActive) async {
-    try {
-      final repository = ref.read(listingsRepositoryProvider);
-      await repository.updateListingStatus(id, isActive);
-      
-      ref.invalidate(allActiveListingsProvider);
-      final updated = await _fetchMyListings();
-      state = AsyncValue.data(updated);
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
-      rethrow;
-    }
+    final repository = ref.read(listingsRepositoryProvider);
+    await repository.updateListingStatus(id, isActive);
+    ref.invalidate(allActiveListingsProvider);
   }
 
   Future<void> deleteListing(String id) async {
-    state = const AsyncValue.loading();
     try {
       final repository = ref.read(listingsRepositoryProvider);
       await repository.deleteListing(id);
-      
       ref.invalidate(allActiveListingsProvider);
-      final updated = await _fetchMyListings();
-      state = AsyncValue.data(updated);
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
+    } on PostgrestException catch (e) {
+      if (e.code == '23503') {
+        throw Exception('Cannot delete this listing because it has associated bookings. Please pause it instead.');
+      }
       rethrow;
     }
   }

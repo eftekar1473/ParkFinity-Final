@@ -3,10 +3,17 @@ import '../../../../shared/data/models/booking_model.dart';
 import '../../../../shared/data/repositories/bookings_repository.dart';
 import '../../../auth/data/auth_repository.dart';
 
-final riderBookingsProvider = FutureProvider.autoDispose<List<BookingModel>>((ref) async {
+final riderBookingsProvider = StreamProvider.autoDispose<List<BookingModel>>((ref) async* {
   final user = ref.watch(authStateChangesProvider).value?.session?.user;
-  if (user == null) return [];
+  if (user == null) {
+    yield [];
+    return;
+  }
 
   final repository = ref.watch(bookingsRepositoryProvider);
-  return await repository.getRiderBookings(user.id);
+  yield await repository.getRiderBookings(user.id);
+
+  await for (final _ in Stream.periodic(const Duration(seconds: 5))) {
+    yield await repository.getRiderBookings(user.id);
+  }
 });

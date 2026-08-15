@@ -36,6 +36,7 @@ class KycRepository {
     required File nidFront,
     required File nidBack,
     File? licenseFile,
+    File? licenseBackFile,
     List<File> propertyDocs = const [],
   }) async {
     final frontUrl = await _upload(nidFront, 'nid_front');
@@ -49,6 +50,9 @@ class KycRepository {
 
     if (licenseFile != null) {
       update['license_url'] = await _upload(licenseFile, 'license');
+    }
+    if (licenseBackFile != null) {
+      update['driving_license_back_url'] = await _upload(licenseBackFile, 'license_back');
     }
 
     if (propertyDocs.isNotEmpty) {

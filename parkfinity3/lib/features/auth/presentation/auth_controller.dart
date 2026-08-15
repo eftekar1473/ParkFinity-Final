@@ -66,6 +66,7 @@ class AuthController extends AsyncNotifier<void> {
     required File nidFront,
     required File nidBack,
     File? licenseFile,
+    File? licenseBackFile,
     List<File> propertyDocs = const [],
   }) async {
     state = const AsyncLoading();
@@ -73,6 +74,7 @@ class AuthController extends AsyncNotifier<void> {
           nidFront: nidFront,
           nidBack: nidBack,
           licenseFile: licenseFile,
+          licenseBackFile: licenseBackFile,
           propertyDocs: propertyDocs,
         ));
   }

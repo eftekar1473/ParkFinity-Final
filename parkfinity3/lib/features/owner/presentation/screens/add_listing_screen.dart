@@ -271,7 +271,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
         videoUrl: videoUrl,
       );
 
-      await ref.read(myListingsProvider.notifier).addListing(listing);
+      await ref.read(myListingsControllerProvider).addListing(listing);
 
       if (mounted) {
         _snack(l10n.listingPublished);

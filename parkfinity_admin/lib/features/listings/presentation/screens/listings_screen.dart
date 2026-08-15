@@ -40,7 +40,7 @@ class ListingsScreen extends ConsumerWidget {
                     DataColumn(label: Text('Actions')),
                   ],
                   rows: listings.map((listing) {
-                    final isActive = listing['is_active'] == true;
+                    final isSuspended = listing['is_suspended'] == true;
                     return DataRow(
                       cells: [
                         DataCell(Text(listing['title'] ?? 'N/A')),
@@ -56,18 +56,18 @@ class ListingsScreen extends ConsumerWidget {
                         DataCell(Text('৳${listing['hourly_rate'] ?? '0.0'}')),
                         DataCell(
                           Chip(
-                            label: Text(isActive ? 'Active' : 'Inactive'),
-                            backgroundColor: isActive ? Colors.green.shade100 : Colors.red.shade100,
+                            label: Text(isSuspended ? 'Suspended' : 'Clear'),
+                            backgroundColor: isSuspended ? Colors.red.shade100 : Colors.green.shade100,
                           ),
                         ),
                         DataCell(
                           TextButton(
                             onPressed: () async {
                               final supabase = Supabase.instance.client;
-                              await supabase.from('listings').update({'is_active': !isActive}).eq('id', listing['id']);
+                              await supabase.from('listings').update({'is_suspended': !isSuspended}).eq('id', listing['id']);
                               ref.invalidate(listingsListProvider);
                             },
-                            child: Text(isActive ? 'Suspend' : 'Activate'),
+                            child: Text(isSuspended ? 'Unsuspend' : 'Suspend'),
                           ),
                         ),
                       ],

@@ -300,7 +300,7 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
         videoUrl: videoUrl,
       );
 
-      await ref.read(myListingsProvider.notifier).editListing(updated);
+      await ref.read(myListingsControllerProvider).editListing(updated);
 
       if (mounted) {
         _snack('Listing updated');

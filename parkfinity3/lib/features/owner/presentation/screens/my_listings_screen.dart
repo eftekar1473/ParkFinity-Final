@@ -30,7 +30,7 @@ class MyListingsScreen extends ConsumerWidget {
               return _ListingCard(
                 listing: listing,
                 onDelete: () {
-                  ref.read(myListingsProvider.notifier).deleteListing(listing.id!);
+                  ref.read(myListingsControllerProvider).deleteListing(listing.id!);
                 },
               );
             },
@@ -168,18 +168,26 @@ class _ListingCardState extends ConsumerState<_ListingCard> {
                       child: Row(
                         children: [
                           Icon(
-                            _isActive ? Icons.check_circle : Icons.pause_circle_filled,
-                            color: _isActive ? Colors.green : Colors.orange,
+                            widget.listing.isSuspended
+                                ? Icons.block
+                                : (_isActive ? Icons.check_circle : Icons.pause_circle_filled),
+                            color: widget.listing.isSuspended
+                                ? Colors.red
+                                : (_isActive ? Colors.green : Colors.orange),
                             size: 20,
                           ),
                           const SizedBox(width: 8),
                           Flexible(
                             child: Text(
-                              _isActive ? l10n.statusActive : l10n.paused,
+                              widget.listing.isSuspended
+                                  ? 'Suspended by Admin'
+                                  : (_isActive ? l10n.statusActive : l10n.paused),
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
-                                color: _isActive ? Colors.green : Colors.orange,
+                                color: widget.listing.isSuspended
+                                    ? Colors.red
+                                    : (_isActive ? Colors.green : Colors.orange),
                               ),
                             ),
                           ),
@@ -191,13 +199,13 @@ class _ListingCardState extends ConsumerState<_ListingCard> {
                         Switch(
                           value: _isActive,
                           activeThumbColor: Colors.green,
-                          onChanged: (value) async {
+                          onChanged: widget.listing.isSuspended ? null : (value) async {
                             final previousValue = _isActive;
                             setState(() {
                               _isActive = value;
                             });
                             try {
-                              await ref.read(myListingsProvider.notifier).updateListingStatus(widget.listing.id!, value);
+                              await ref.read(myListingsControllerProvider).updateListingStatus(widget.listing.id!, value);
                             } catch (e) {
                               setState(() {
                                 _isActive = previousValue; // Revert on failure
